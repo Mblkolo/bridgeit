@@ -1,0 +1,8 @@
+﻿body form{
+    display: none;
+}
+
+.show {
+    display: block;
+}
+

@@ -34,35 +34,36 @@
                 inc.innerHTML += '.. connection closed<br/>';
             }
 
-            loginForm.addEventListener('submit', function (e) {
-				e.preventDefault();
-				var val = input.value;
-				ws.send(JSON.stringify({ type: "login", value: val }));
-				//input.value = "";
-            });
+            //loginForm.addEventListener('submit', function (e) {
+			//	e.preventDefault();
+			//	var val = input.value;
+			//	ws.send(JSON.stringify({ type: "login", value: val }));
+			//	//input.value = "";
+            //});
 
-            welcomeForm.addEventListener('submit', function (e) {
-                e.preventDefault();
-                ws.send(JSON.stringify({ type: "welcome", value: localStorage.getItem("userId") }));
-            });
+            //welcomeButton.addEventListener('submit', function (e) {
+            //    e.preventDefault();
+            //    ws.send(JSON.stringify({ type: "welcome", value: localStorage.getItem("userId") }));
+            //});
 
-            exitButton.addEventListener('submit', function (e) {
-                e.preventDefault();
-                ws.send(JSON.stringify({ type: "exit" }));
-            });
+            //exitButton.addEventListener('submit', function (e) {
+            //    e.preventDefault();
+            //    ws.send(JSON.stringify({ type: "exit" }));
+                
+            //});
 
-            exitButton.addEventListener('submit', function (e) {
-                e.preventDefault();
-                ws.send(JSON.stringify({ type: "leave" }));
-            });
+            //leaveButton.addEventListener('submit', function (e) {
+            //    e.preventDefault();
+            //    ws.send(JSON.stringify({ type: "leave" }));
+            //});
 
-            if (!localStorage.getItem("userId")) {
-                loginForm.className = "show";
-            }
-            else {
-                document.getElementById('username').innerText = localStorage.getItem("userName");
-                welcomeForm.className = "show";
-            }
+            //if (!localStorage.getItem("userId")) {
+            //    loginForm.className = "show";
+            //}
+            //else {
+            //    document.getElementById('username').innerText = localStorage.getItem("userName");
+            //    welcomeForm.className = "show";
+            //}
         }
         window.onload = start;
     </script>
@@ -75,11 +76,11 @@
     </form>
     <form id="welcomeForm">
         <div>Я тебя знаю, <span id="username"></span></div>
-        <input type="submit" value="это я">
+        <input type="submit" id="welcomeButton" value="это я">
+        <input type="submit" id="leaveButton" value="это не я">
     </form>
     <form id="exitForm">
         <input id="exitButton" type="submit" value="выйти"/>
-        <input id="leaveButton" type="submit" value="уйти навсегда и все забыть"/>
     </form>
     <pre id="incomming"></pre>
 </body>

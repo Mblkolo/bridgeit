@@ -35,7 +35,7 @@ namespace BridgeitServer
                     socket.OnMessage = message =>
                         {
                             Console.WriteLine(message);
-                            var __mail = JsonConvert.DeserializeObject<Message>(message);
+                            var __mail = JsonConvert.DeserializeObject<OutboxMessage>(message);
                             switch(__mail.type)
                             {
                                 case "login":
@@ -43,7 +43,7 @@ namespace BridgeitServer
                                         Guid __userId = Guid.NewGuid();
                                         usersById[__userId] = new List<IWebSocketConnection>();
                                         usersById[__userId].Add(socket);
-                                        var __resive = new Message { type = "login", value = __userId.ToString() };
+                                        var __resive = new OutboxMessage { type = "login", value = __userId.ToString() };
                                         socket.Send(JsonConvert.SerializeObject(__resive));
                                     }
                                     break;
@@ -90,9 +90,69 @@ namespace BridgeitServer
         }
     }
 
-    class Message
+    class OutboxMessage
     {
+        public string area;
         public string type;
         public string value;
+    }
+
+    class InboxMessage
+    {
+        public string session;
+        public string type;
+    }
+
+    class Router
+    {
+        public IWebSocketConnection Connection;
+        public World World;
+        public Player Player;
+
+        public void Init(IWebSocketConnection connection, World world)
+        {
+            Connection = connection;
+            World = world;
+        }
+
+        public void OnMessage(string message)
+        {
+            var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
+            
+            if(__inbox.type == "join")
+            {
+                if(!World.Players.TryGetValue(__inbox.session, out Player))
+                {
+                    Player = new Player(Guid.NewGuid().ToString());
+                    World.Players.Add(Player.Id, Player);
+                    Connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "session", value = Player.Id }));
+                }
+
+                Connection.Send(Player.GetState());
+            }
+        }
+    }
+
+    class World
+    {
+        public Dictionary<string, Player> Players = new Dictionary<string, Player>();
+
+
+    }
+
+    class Player
+    {
+        public readonly string Id;
+        
+        public Player(string id)
+        {
+            Id = id;
+        }
+
+        public string GetState()
+        {
+            var __message = new OutboxMessage { area = "welcome", type = "login" };
+            return JsonConvert.SerializeObject(__message);
+        }
     }
 }

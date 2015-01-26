@@ -1,45 +1,44 @@
-﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">    
+﻿<!DOCTYPE html>    
 <html>
 <head>
     <title>websocket client</title>
     <link href="style.css" rel="stylesheet" />
     <script type="text/javascript">
-        var start = function () {
+        var start = function() {
             var inc = document.getElementById('incomming');
             var wsImpl = window.WebSocket || window.MozWebSocket;
             var form = document.getElementById('sendForm');
             var input = document.getElementById('sendText');
 
             inc.innerHTML += "connecting to server ..<br/>";
-            // create a new websocket and connect
             window.ws = new wsImpl('ws://localhost:8181/');
-            // when data is comming from the server, this metod is called
-            ws.onmessage = function (evt) {
+
+
+            routers = {};
+            routers["system"] = SystemRouter;
+            routers["welcome"] = WelcomeRouter;
+
+            ws.onmessage = function(evt) {
                 inc.innerHTML += evt.data + '<br/>';
-                var mail = JSON.parse(evt.data);
-                if(mail.type == "login")
-                {
-                    localStorage.setItem("userId", mail.value);
-                    localStorage.setItem("userName", input.value);
-                    loginForm.className = "";
-                    exitForm.className = "show";
-                }
+                var data = JSON.parse(evt.data);
+                routers[data.area](data);
             };
             // when the connection is established, this method is called
-            ws.onopen = function () {
+            ws.onopen = function() {
                 inc.innerHTML += '.. connection open<br/>';
+                Join();
             };
             // when the connection is closed, this method is called
-            ws.onclose = function () {
+            ws.onclose = function() {
                 inc.innerHTML += '.. connection closed<br/>';
-            }
+            };
 
-            //loginForm.addEventListener('submit', function (e) {
-			//	e.preventDefault();
-			//	var val = input.value;
-			//	ws.send(JSON.stringify({ type: "login", value: val }));
-			//	//input.value = "";
-            //});
+            loginForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                
+            	var __userName = input.value;
+            	ws.send(JSON.stringify({ type: "login", session: localStorage.getItem("sessionId"), value: __userName }));
+            });
 
             //welcomeButton.addEventListener('submit', function (e) {
             //    e.preventDefault();
@@ -49,7 +48,7 @@
             //exitButton.addEventListener('submit', function (e) {
             //    e.preventDefault();
             //    ws.send(JSON.stringify({ type: "exit" }));
-                
+
             //});
 
             //leaveButton.addEventListener('submit', function (e) {
@@ -61,20 +60,43 @@
             //    loginForm.className = "show";
             //}
             //else {
-            //    document.getElementById('username').innerText = localStorage.getItem("userName");
+            //    document.getElementById('username').textContent = localStorage.getItem("userName");
             //    welcomeForm.className = "show";
             //}
+        };
+        
+        function Join() {
+            var __sessionId = localStorage.getItem("sessionId");
+            ws.send(JSON.stringify({ type: "join", session: __sessionId }));
+        }
+        
+        function SystemRouter(data) {
+            if (data.type == "session")
+                localStorage.setItem("sessionId", data.value);
+        }
+        function WelcomeRouter(data) {
+            if (data.type == "show") {
+                //Всё аккуратно закрыть, а это открыть
+                loginForm.className = "show";
+            }
+            if (data.type == "error") {
+                //Всё аккуратно закрыть, а это открыть и ошибку показать
+                loginForm.className = "show";
+                loginForm_error.textContent = data.value;
+            }
         }
         window.onload = start;
+        
     </script>
 </head>
 <body>
-    <form id="loginForm">
+    <form id="loginForm" action="Index.html">
         <div>Ты кто такой?</div>
-        <input id="sendText" type="text" placeholder="Text to send" />
+        <input id="sendText" type="text" />
         <input type="submit" value="это я">
+        <div id="loginForm_error"></div>
     </form>
-    <form id="welcomeForm">
+    <form id="welcomeForm" action="Index.html">
         <div>Я тебя знаю, <span id="username"></span></div>
         <input type="submit" id="welcomeButton" value="это я">
         <input type="submit" id="leaveButton" value="это не я">

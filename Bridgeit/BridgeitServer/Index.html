@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>    
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>websocket client</title>
     <link href="style.css" rel="stylesheet" />
     <script type="text/javascript">
-        var start = function() {
+        var start = function () {
             var inc = document.getElementById('incomming');
             var wsImpl = window.WebSocket || window.MozWebSocket;
             var form = document.getElementById('sendForm');
@@ -13,83 +13,111 @@
             inc.innerHTML += "connecting to server ..<br/>";
             window.ws = new wsImpl('ws://localhost:8181/');
 
+            var __routers = {};
+            __routers["system"] = SystemRouter;
+            __routers["welcome"] = WelcomeRouter;
 
-            routers = {};
-            routers["system"] = SystemRouter;
-            routers["welcome"] = WelcomeRouter;
-
-            ws.onmessage = function(evt) {
+            ws.onmessage = function (evt) {
                 inc.innerHTML += evt.data + '<br/>';
                 var data = JSON.parse(evt.data);
-                routers[data.area](data);
+                __routers[data.area](data);
             };
             // when the connection is established, this method is called
-            ws.onopen = function() {
+            ws.onopen = function () {
                 inc.innerHTML += '.. connection open<br/>';
                 Join();
             };
             // when the connection is closed, this method is called
-            ws.onclose = function() {
+            ws.onclose = function () {
                 inc.innerHTML += '.. connection closed<br/>';
             };
 
             loginForm.addEventListener('submit', function (e) {
                 e.preventDefault();
-                
-            	var __userName = input.value;
-            	ws.send(JSON.stringify({ type: "login", session: localStorage.getItem("sessionId"), value: __userName }));
+
+                var __userName = input.value;
+                ws.send(JSON.stringify({ type: "login", session: localStorage.getItem("sessionId"), value: __userName }));
             });
-
-            //welcomeButton.addEventListener('submit', function (e) {
-            //    e.preventDefault();
-            //    ws.send(JSON.stringify({ type: "welcome", value: localStorage.getItem("userId") }));
-            //});
-
-            //exitButton.addEventListener('submit', function (e) {
-            //    e.preventDefault();
-            //    ws.send(JSON.stringify({ type: "exit" }));
-
-            //});
-
-            //leaveButton.addEventListener('submit', function (e) {
-            //    e.preventDefault();
-            //    ws.send(JSON.stringify({ type: "leave" }));
-            //});
-
-            //if (!localStorage.getItem("userId")) {
-            //    loginForm.className = "show";
-            //}
-            //else {
-            //    document.getElementById('username').textContent = localStorage.getItem("userName");
-            //    welcomeForm.className = "show";
-            //}
         };
-        
-        function Join() {
-            var __sessionId = localStorage.getItem("sessionId");
-            ws.send(JSON.stringify({ type: "join", session: __sessionId }));
-        }
-        
-        function SystemRouter(data) {
-            if (data.type == "session")
-                localStorage.setItem("sessionId", data.value);
-        }
-        function WelcomeRouter(data) {
-            if (data.type == "show") {
-                //Всё аккуратно закрыть, а это открыть
-                loginForm.className = "show";
-            }
-            if (data.type == "error") {
-                //Всё аккуратно закрыть, а это открыть и ошибку показать
-                loginForm.className = "show";
-                loginForm_error.textContent = data.value;
-            }
-        }
+
+        //function Join() {
+        //    var __sessionId = localStorage.getItem("sessionId");
+        //    ws.send(JSON.stringify({ type: "join", session: __sessionId }));
+        //}
+
+        //function SystemRouter(data) {
+        //    if (data.type == "session")
+        //        localStorage.setItem("sessionId", data.value);
+        //}
+        //function WelcomeRouter(data) {
+        //    if (data.type == "show") {
+        //        //Всё аккуратно закрыть, а это открыть
+        //        loginForm.className = "show";
+        //    }
+        //    if (data.type == "error") {
+        //        //Всё аккуратно закрыть, а это открыть и ошибку показать
+        //        loginForm.className = "show";
+        //        loginForm_error.textContent = data.value;
+        //    }
+        //}
         window.onload = start;
         
+        var Br = function () {
+            //Текущая локация, сообщения из других локаций игнорируются
+            var __currentArea = "";
+
+            var __routers = {
+                "system":_systemRouter,
+                "welcome": _welcomeRouter,
+            };
+
+            var __leaveActions = {
+                "welcome": null,
+                "system": null,
+            };
+            
+            //И тут я понял, что нам нужны состояния как в паттернах программирования
+            //Каждое из них понимает: пришли, ушли, получил коммнду. Имеет поле со своим названием, рули гуями (или ещё один слой?)
+            //Профит
+
+
+            function _systemRouter(data) {
+                if (data.type == "setSession")
+                    ;//TODO установить сессию
+                if (data.type == "changeArea")
+                    ;//TODO Сменить локацию
+            }
+
+            function _welcomeRouter(data) {
+
+            }
+
+            function route(data) {
+                if (data.area != 'system' && data.area != __currentArea)
+                    return;
+                
+                
+            };
+            
+            //Запускается после обновления страницы, ну или когда мы в панике
+            function start() {
+                //Сначала нужно установить коннект, а там видно будет
+                //TODO устаноить таки коннект
+            }
+
+            return { route: route };
+        }();
     </script>
 </head>
 <body>
+    <div>
+        <h3>Великое ничто!</h3>
+        <div>
+            Всё начинается с великого ничто, клиент обращается к серверу и пытается понять где он. <br />
+            Для этого нужна сессия, если сессии нет, то всё понятно, нужно аутентифицироваться, но если она есть и протухла? <br />
+            Да не важно, в любом случае первым запросом идёт присоединение к серверу и передача идентификатора сессии. И получение его же.
+        </div>
+    </div>
     <form id="loginForm" action="Index.html">
         <div>Ты кто такой?</div>
         <input id="sendText" type="text" />
@@ -102,7 +130,7 @@
         <input type="submit" id="leaveButton" value="это не я">
     </form>
     <form id="exitForm">
-        <input id="exitButton" type="submit" value="выйти"/>
+        <input id="exitButton" type="submit" value="выйти" />
     </form>
     <pre id="incomming"></pre>
 </body>

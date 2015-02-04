@@ -104,7 +104,18 @@
 
             var RoomsState = function () {
                 function route(data) {
+                    if(data.type == 'roomsList') {
+                        //TODO отработать получение списка комнат
+                        //Гарантируется что все измения придут через updateRoomsList
+                    }
 
+                    if (data.type == 'updateRoomsList') {
+                        //TODO отработать обновление списка комнат
+                        //Если комната создана этим же игроком, то она в общем списке не отображется а висит сверхку
+                        //Главная особенность в том, что её можно удалить, удалять чужие комнаты нельзя
+                        //Можно пересоздать свою, тогда она заменится
+                        //Нельзя присоедениться к себе :)
+                    }
                 }
                 function leave() {
                     GetById('roomArea').className = 'hide';
@@ -112,6 +123,8 @@
 
                 function enter() {
                     GetById('roomArea').className = '';
+                    //Нам нужен список чатов
+                    Socket.send(JSON.stringify({ type: "getRooms", session: Bag.getItem("session")}));
                 }
 
                 return {
@@ -184,11 +197,6 @@
         <span id="loginForm_errorMessage"></span>
         <button id="loginForm_clearError">я исправлюсь...</button>
     </div>
-    <!--    <form id="welcomeForm" action="Index.html">
-        <div>Я тебя знаю, <span id="username"></span></div>
-        <input type="submit" id="welcomeButton" value="это я">
-        <input type="submit" id="leaveButton" value="это не я">
-    </form>-->
     <form id="exitForm">
         <input id="exitButton" type="submit" value="выйти" />
     </form>

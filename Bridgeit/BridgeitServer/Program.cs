@@ -119,12 +119,6 @@ namespace BridgeitServer
             Area = "default";
         }
 
-        //public string GetState()
-        //{
-        //    var __message = new OutboxMessage { area = "welcome", type = "show" };
-        //    return JsonConvert.SerializeObject(__message);
-        //}
-
         public string Area { get; set; }
     }
 }

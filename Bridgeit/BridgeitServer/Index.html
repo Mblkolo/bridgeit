@@ -4,117 +4,154 @@
     <title>websocket client</title>
     <link href="style.css" rel="stylesheet" />
     <script type="text/javascript">
+
+        var WsImpl = window.WebSocket || window.MozWebSocket;
+        var Document = document;
+        var GetById = function (id) { return Document.getElementById(id); };
+        var Bag = localStorage;
+
         var start = function () {
-            var inc = document.getElementById('incomming');
-            var wsImpl = window.WebSocket || window.MozWebSocket;
-            var form = document.getElementById('sendForm');
-            var input = document.getElementById('sendText');
+            var Log = GetById('LogArea');
 
-            inc.innerHTML += "connecting to server ..<br/>";
-            window.ws = new wsImpl('ws://localhost:8181/');
+            var Socket = function () {
+                var __instance = {};
+                var __ws = null;
 
-            var __routers = {};
-            __routers["system"] = SystemRouter;
-            __routers["welcome"] = WelcomeRouter;
+                function send(message) {
+                    if (__ws != null)
+                        __ws.send(message);
+                }
 
-            ws.onmessage = function (evt) {
-                inc.innerHTML += evt.data + '<br/>';
-                var data = JSON.parse(evt.data);
-                __routers[data.area](data);
-            };
-            // when the connection is established, this method is called
-            ws.onopen = function () {
-                inc.innerHTML += '.. connection open<br/>';
-                Join();
-            };
-            // when the connection is closed, this method is called
-            ws.onclose = function () {
-                inc.innerHTML += '.. connection closed<br/>';
-            };
+                function open() {
+                    __ws = new WsImpl('ws://localhost:8181/');
+                    Log.innerHTML += '.. connection started<br/>';
+                    __ws.onopen = function () {
+                        Log.innerHTML += '.. connection open<br/>';
+                        __ws.send(JSON.stringify({ type: "join", session: Bag.getItem('session') }));
+                    };
+                    __ws.onclose = function () { Log.innerHTML += '.. connection closed<br/>'; }; //И тут тоже больше ничего полезного
+                    __ws.onmessage = function (evt) {
+                        Log.innerHTML += evt.data + '<br/>';
+                        if (__instance.onmessage)
+                            __instance.onmessage(evt.data);
 
-            loginForm.addEventListener('submit', function (e) {
-                e.preventDefault();
+                    };
+                }
 
-                var __userName = input.value;
-                ws.send(JSON.stringify({ type: "login", session: localStorage.getItem("sessionId"), value: __userName }));
-            });
+                __instance.send = send;
+                __instance.open = open;
+                __instance.onmessage = null;
+
+                return __instance;
+            }();
+
+            var DefaultState = function () {
+                function route(data) {
+
+                }
+                function leave() {
+                    GetById('defaultText').className = 'hide';
+                }
+
+                function enter() {
+                    GetById('defaultText').className = '';
+                }
+
+                return {
+                    route: route,
+                    leave: leave,
+                    enter: enter,
+                    area: "default"
+                };
+            }();
+
+
+
+            var WelcomeState = function () {
+                GetById('loginForm').addEventListener('submit', function (e) {
+                    e.preventDefault();
+
+                    var __userName = GetById('sendText').value;
+                    Socket.send(JSON.stringify({ type: "login", session: Bag.getItem("session"), value: __userName }));
+                });
+                GetById('loginForm_clearError').addEventListener('click', function (e) {
+                    e.preventDefault();
+                    GetById('loginForm_error').className = 'hide';
+                    GetById('loginForm').className = 'show';
+                });
+
+                function route(data) {
+                    if (data.type == "showError") {
+                        GetById('loginForm_errorMessage').textContent = data.value;
+                        GetById('loginForm_error').className = '';
+                        GetById('loginForm').className = '';
+                    }
+                }
+                function leave() {
+                    GetById('loginForm').className = '';
+                }
+
+                function enter() {
+                    GetById('loginForm').className = 'show';
+                }
+
+                return {
+                    route: route,
+                    leave: leave,
+                    enter: enter,
+                    area: "welcome"
+                };
+            }();
+
+            var Br = function () {
+                //Текущая локация, сообщения из других локаций игнорируются
+                var __currentState = DefaultState;
+
+                var __states = {};
+                __states[DefaultState.area] = DefaultState;
+                __states[WelcomeState.area] = WelcomeState;
+
+                function systemRoute(data) {
+                    if (data.type == "setSession")
+                        Bag.setItem("session", data.value);
+
+                    if (data.type == "changeArea") {
+                        __currentState.leave();
+                        __currentState = __states[data.value];
+                        __currentState.enter();
+                    }
+                }
+
+                function route(message) {
+                    var __data = JSON.parse(message);
+                    if (__data.area == 'system')
+                        systemRoute(__data);
+                    else if (__data.area == __currentState.area)
+                        __currentState.route(__data);
+                };
+
+                //Запускается после обновления страницы, ну или когда мы в панике
+                function start() {
+                    Socket.onmessage = route;
+                    Socket.open();
+                }
+
+                return { start: start };
+            }();
+
+            Br.start();
         };
-
-        //function Join() {
-        //    var __sessionId = localStorage.getItem("sessionId");
-        //    ws.send(JSON.stringify({ type: "join", session: __sessionId }));
-        //}
-
-        //function SystemRouter(data) {
-        //    if (data.type == "session")
-        //        localStorage.setItem("sessionId", data.value);
-        //}
-        //function WelcomeRouter(data) {
-        //    if (data.type == "show") {
-        //        //Всё аккуратно закрыть, а это открыть
-        //        loginForm.className = "show";
-        //    }
-        //    if (data.type == "error") {
-        //        //Всё аккуратно закрыть, а это открыть и ошибку показать
-        //        loginForm.className = "show";
-        //        loginForm_error.textContent = data.value;
-        //    }
-        //}
         window.onload = start;
-        
-        var Br = function () {
-            //Текущая локация, сообщения из других локаций игнорируются
-            var __currentArea = "";
-
-            var __routers = {
-                "system":_systemRouter,
-                "welcome": _welcomeRouter,
-            };
-
-            var __leaveActions = {
-                "welcome": null,
-                "system": null,
-            };
-            
-            //И тут я понял, что нам нужны состояния как в паттернах программирования
-            //Каждое из них понимает: пришли, ушли, получил коммнду. Имеет поле со своим названием, рули гуями (или ещё один слой?)
-            //Профит
-
-
-            function _systemRouter(data) {
-                if (data.type == "setSession")
-                    ;//TODO установить сессию
-                if (data.type == "changeArea")
-                    ;//TODO Сменить локацию
-            }
-
-            function _welcomeRouter(data) {
-
-            }
-
-            function route(data) {
-                if (data.area != 'system' && data.area != __currentArea)
-                    return;
-                
-                
-            };
-            
-            //Запускается после обновления страницы, ну или когда мы в панике
-            function start() {
-                //Сначала нужно установить коннект, а там видно будет
-                //TODO устаноить таки коннект
-            }
-
-            return { route: route };
-        }();
     </script>
 </head>
 <body>
-    <div>
+    <div id="defaultText">
         <h3>Великое ничто!</h3>
         <div>
-            Всё начинается с великого ничто, клиент обращается к серверу и пытается понять где он. <br />
-            Для этого нужна сессия, если сессии нет, то всё понятно, нужно аутентифицироваться, но если она есть и протухла? <br />
+            Всё начинается с великого ничто, клиент обращается к серверу и пытается понять где он.
+            <br />
+            Для этого нужна сессия, если сессии нет, то всё понятно, нужно аутентифицироваться, но если она есть и протухла?
+            <br />
             Да не важно, в любом случае первым запросом идёт присоединение к серверу и передача идентификатора сессии. И получение его же.
         </div>
     </div>
@@ -122,16 +159,19 @@
         <div>Ты кто такой?</div>
         <input id="sendText" type="text" />
         <input type="submit" value="это я">
-        <div id="loginForm_error"></div>
     </form>
-    <form id="welcomeForm" action="Index.html">
+    <div id="loginForm_error" class="hide">
+        <span id="loginForm_errorMessage"></span>
+        <button id="loginForm_clearError">я исправлюсь...</button>
+    </div>
+    <!--    <form id="welcomeForm" action="Index.html">
         <div>Я тебя знаю, <span id="username"></span></div>
         <input type="submit" id="welcomeButton" value="это я">
         <input type="submit" id="leaveButton" value="это не я">
-    </form>
+    </form>-->
     <form id="exitForm">
         <input id="exitButton" type="submit" value="выйти" />
     </form>
-    <pre id="incomming"></pre>
+    <pre id="LogArea"></pre>
 </body>
 </html>

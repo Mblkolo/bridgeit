@@ -75,10 +75,11 @@ namespace BridgeitServer
                 {
                     Player = new Player(Guid.NewGuid().ToString());
                     World.Players.Add(Player.Id, Player);
-                    Connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "session", value = Player.Id }));
+                    Connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "setSession", value = Player.Id }));
+                    Player.Area = "welcome";
                 }
 
-                Connection.Send(Player.GetState());
+                Connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "changeArea", value = Player.Area }));
                 return;
             }
 
@@ -94,7 +95,7 @@ namespace BridgeitServer
                     Connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "rooms", type = "show", value = __name }));
                 }
                 else
-                    Connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "welcome", type = "error", value = "Плохое имя, попробуй другое" }));
+                    Connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "welcome", type = "showError", value = "Плохое имя, попробуй другое" }));
             }
         }
     }
@@ -114,12 +115,15 @@ namespace BridgeitServer
         public Player(string id)
         {
             Id = id;
+            Area = "default";
         }
 
-        public string GetState()
-        {
-            var __message = new OutboxMessage { area = "welcome", type = "show" };
-            return JsonConvert.SerializeObject(__message);
-        }
+        //public string GetState()
+        //{
+        //    var __message = new OutboxMessage { area = "welcome", type = "show" };
+        //    return JsonConvert.SerializeObject(__message);
+        //}
+
+        public string Area { get; set; }
     }
 }

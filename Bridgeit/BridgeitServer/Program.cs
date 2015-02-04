@@ -92,7 +92,8 @@ namespace BridgeitServer
                 if (!string.IsNullOrWhiteSpace(__name))
                 {
                     Player.Name = __name;
-                    Connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "rooms", type = "show", value = __name }));
+                    Player.Area = "rooms";
+                    Connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "changeArea", value = Player.Area }));
                 }
                 else
                     Connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "welcome", type = "showError", value = "Плохое имя, попробуй другое" }));

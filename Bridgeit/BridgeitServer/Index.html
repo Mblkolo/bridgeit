@@ -65,8 +65,6 @@
                 };
             }();
 
-
-
             var WelcomeState = function () {
                 GetById('loginForm').addEventListener('submit', function (e) {
                     e.preventDefault();
@@ -102,6 +100,27 @@
                     area: "welcome"
                 };
             }();
+            
+
+            var RoomsState = function () {
+                function route(data) {
+
+                }
+                function leave() {
+                    GetById('roomArea').className = 'hide';
+                }
+
+                function enter() {
+                    GetById('roomArea').className = '';
+                }
+
+                return {
+                    route: route,
+                    leave: leave,
+                    enter: enter,
+                    area: "rooms"
+                };
+            }();
 
             var Br = function () {
                 //Текущая локация, сообщения из других локаций игнорируются
@@ -110,6 +129,7 @@
                 var __states = {};
                 __states[DefaultState.area] = DefaultState;
                 __states[WelcomeState.area] = WelcomeState;
+                __states[RoomsState.area] = RoomsState;
 
                 function systemRoute(data) {
                     if (data.type == "setSession")
@@ -172,6 +192,8 @@
     <form id="exitForm">
         <input id="exitButton" type="submit" value="выйти" />
     </form>
+    <div id="roomArea" class="hide">Видешь список игр? А он есть</div>
+
     <pre id="LogArea"></pre>
 </body>
 </html>

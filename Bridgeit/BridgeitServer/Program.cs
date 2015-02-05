@@ -101,9 +101,50 @@ namespace BridgeitServer
         }
     }
 
-    class World
+    internal class World
     {
         public Dictionary<string, Player> Players = new Dictionary<string, Player>();
+
+        public List<Player> RoomListeners = new List<Player>();
+        public List<Room> Rooms = new List<Room>();
+
+        //Игрок зашёл в комнаты
+        public void JoinRooms(Player player)
+        {
+            RoomListeners.Add(player);
+            //TODO отослать пользователю текущее состояние
+        }
+
+        //Игрок покидает комнтау
+        public void LeaveRooms(Player player)
+        {
+            RemoveRoom(player);
+            RoomListeners.Remove(player);
+        }
+
+        public void RemoveRoom(Player player)
+        {
+            //TODO игрок хочет удалить свою комнату
+        }
+
+        public void CreateRoom(Player player)
+        {
+            //TODO игрок создаёт свою комнату
+        }
+
+
+
+        public void NotifyAllPlayer()
+        {
+            //TODO тут типа делаем рассылку всем пользователям
+        }
+
+
+    }
+
+    class Room
+    {
+
 
 
     }

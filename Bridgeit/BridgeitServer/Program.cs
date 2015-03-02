@@ -43,6 +43,18 @@ namespace BridgeitServer
         public string area;
         public string type;
         public string value;
+
+        public OutboxMessage()
+        {
+
+        }
+
+        public OutboxMessage(string area, string type, string value)
+        {
+            this.area = area;
+            this.type = type;
+            this.value = value;
+        }
     }
 
     class InboxMessage

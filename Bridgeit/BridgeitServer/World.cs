@@ -10,65 +10,114 @@ namespace BridgeitServer
 {
     sealed class GameWorld
     {
-        private readonly List<Session> _unidentifiedSession = new List<Session>();
-        private readonly Dictionary<Guid, Session> _sessions = new Dictionary<Guid, Session>();
+        private readonly Dictionary<Guid, ISystemState> _systemStates = new Dictionary<Guid, ISystemState>();
+        private readonly List<ISystemState> _undefinedSession = new List<ISystemState>();
 
-        public void ConnectionCreated(IWebSocketConnection connection)
+        /// <summary>
+        /// Пользователь подключился
+        /// </summary>
+        /// <param name="state"></param>
+        public void Connect(ISystemState state)
         {
-            var __session = new Session(this);
-            __session.Join(connection);
-            _unidentifiedSession.Add(__session);
+            _undefinedSession.Add(state);
         }
 
-        public void Join(Session session, Guid sessionID)
+        public void Disconnect(ISystemState state)
         {
-            if (_sessions.ContainsKey(sessionID))
+            if (state.SesionId == Guid.Empty)
+                _undefinedSession.Remove(state);
+            else
+                _systemStates.Remove(state.SesionId);
+        }
+        //
+        public void Join(ISystemState state, Guid sessionID)
+        {
+            ISystemState __alreadySystemState;
+            if (_systemStates.TryGetValue(sessionID, out __alreadySystemState))
             {
-                session.Connections.ForEach(x => _sessions[sessionID].Join(x));
-                session.Connections.Clear();
+                __alreadySystemState.Join(state);
+                //TODO сообщить о текущем состоянии?
             }
             else
-                _sessions[session.Id] = session;
-
-            _unidentifiedSession.Remove(session);
-        }
-
-        public void Login(Session session, string name)
-        {
-            if (_sessions.Values.Any(x => x.Name == name))
             {
-                session.ShowError("Имя занято, выбери другое!");
-                return;
+                state.SesionId = sessionID;
+                _systemStates.Add(state.SesionId, state);
             }
-
-            session.Name = name;
-            session.GotoListState();
         }
+
+        //public void Login(IWelcomeState welcomeState, string name)
+        //{
+        //    if (_sessions.Values.Any(x => x.Name == name))
+        //    {
+        //        welcomeState.ShowErrorAsync("Имя занято, выбери другое!");
+        //        return;
+        //    }
+
+        //    welcomeState.Session.Name = name;
+        //    welcomeState.GotoListStateAsync();
+        //}
 
         readonly Dictionary<Guid, RoomSettings> _roomSettings = new Dictionary<Guid, RoomSettings>();
+        readonly Dictionary<Guid, IRoomState> _roomListener = new Dictionary<Guid, IRoomState>();
 
-        public void GetRooms(Session session, string value)
+        /// <summary>
+        /// Подписка на обновление списка комнат
+        /// </summary>
+        public void EnterRoomsArea(IRoomState roomState)
         {
-            if (_roomSettings.ContainsKey(session.Id))
-                return;
+            _roomListener[roomState.Player.Id] = roomState;
+            roomState.SendRoomListAsync(_roomSettings.Values);
+        }
 
+        public void CreateRoom(IRoomState roomState, string value)
+        {
             RoomSettings __s = RoomSettings.TryCreate(value);
             if (__s == null)
                 return;
 
-            _roomSettings.Add(session.Id, __s);
-
+            _roomSettings[roomState.Player.Id] = __s;
+            foreach (var __roomState in _roomListener.Values)
+                __roomState.UpdateRoomListAsync(roomState.Player.Id, __s);
         }
 
-        public void CreateRoom(Session session, string value)
+        public void RemoveRoom(IRoomState roomState)
         {
-            throw new NotImplementedException();
+            if (_roomSettings.Remove(roomState.Player.Id))
+                foreach (var __roomState in _roomListener.Values)
+                    __roomState.UpdateRoomListAsync(roomState.Player.Id, null);
         }
 
-        public void RemoveRoom(Session session, string value)
+        public void LeaveRoomArea(IRoomState roomState)
         {
-            throw new NotImplementedException();
+            _roomSettings.Remove(roomState.Player.Id);
+            _roomListener.Remove(roomState.Player.Id);
         }
+    }
+
+    interface ISystemState
+    {
+        Guid SesionId { get; set; }
+        void Join(ISystemState state);
+    }
+
+    //interface IWelcomeState
+    //{
+    //    ISession Session { get; }
+    //    void ShowErrorAsync(string erroMessage);
+    //    void GotoListStateAsync();
+    //}
+
+    interface IRoomState
+    {
+        IPlayer Player { get; }
+        void SendRoomListAsync(IEnumerable<RoomSettings> settings);
+        void UpdateRoomListAsync(Guid id, RoomSettings roomSettings);
+    }
+
+    interface IPlayer
+    {
+        string Name { get; }
+        Guid Id { get; }
     }
 
     class RoomSettings
@@ -79,74 +128,11 @@ namespace BridgeitServer
         }
     }
 
-    static class DefaultRouter
-    {
-        public readonly static string Name = "DefaultRouter";
 
-        public static void OnMessage(Session session, GameWorld world, string message)
-        {
-            var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
-            if (__inbox.type != "join")
-                return;
-
-            Guid __sessionID;
-            if (!Guid.TryParse(__inbox.value, out __sessionID))
-                return;
-
-            world.Join(session, __sessionID);
-        }
-    }
-
-    static class WelcomeRouter
-    {
-        public readonly static string Name = "WelcomeRouter";
-
-        public static void OnMessage(Session session, GameWorld world, string message)
-        {
-            var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
-
-            Guid __sessionID;
-            if (!Guid.TryParse(__inbox.value, out __sessionID))
-                return;
-
-            if (__sessionID != session.Id)
-                return;
-
-            if (__inbox.type == "login")
-                world.Login(session, __inbox.value);
-        }
-    }
-
-    static class ListRouter
-    {
-        public readonly static string Name = "ListRouter";
-
-        public static void OnMessage(Session session, GameWorld world, string message)
-        {
-            var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
-
-            Guid __sessionID;
-            if (!Guid.TryParse(__inbox.value, out __sessionID))
-                return;
-
-            if (__sessionID != session.Id)
-                return;
-
-            if (__inbox.type == "getRooms")
-                world.GetRooms(session, __inbox.value);
-
-            if (__inbox.type == "CreateRoom")
-                world.CreateRoom(session, __inbox.value);
-
-            if (__inbox.type == "RemoveRoom")
-                world.RemoveRoom(session, __inbox.value);
-        }
-    }
 
     class Session
     {
         private readonly GameWorld _world;
-        private string _currentRouter = DefaultRouter.Name;
 
         public readonly List<IWebSocketConnection> Connections = new List<IWebSocketConnection>();
         public readonly Guid Id = Guid.NewGuid();
@@ -167,43 +153,12 @@ namespace BridgeitServer
 
         private void OnMessage(string message)
         {
-            Routers[_currentRouter](this, _world, message);
+            //Routers[_currentRouter](this, _world, message);
         }
 
         private void OnClose(IWebSocketConnection connection)
         {
             Connections.Remove(connection);
         }
-
-        public static Dictionary<string, Action<Session, GameWorld, string>> Routers = new Dictionary<string, Action<Session, GameWorld, string>>
-            {
-                {DefaultRouter.Name, DefaultRouter.OnMessage},
-                {WelcomeRouter.Name, WelcomeRouter.OnMessage},
-                {ListRouter.Name, ListRouter.OnMessage}
-            };
-
-        private void Send(OutboxMessage message)
-        {
-            var __text = JsonConvert.SerializeObject(message);
-            Connections.ForEach(x => x.Send(__text));
-        }
-
-        public void GotoWelcomeState()
-        {
-            _currentRouter = WelcomeRouter.Name;
-        }
-
-        public void ShowError(string errorMessage)
-        {
-            var __message = new OutboxMessage("Login", "ShowError", errorMessage);
-            Send(__message);
-        }
-
-        public void GotoListState()
-        {
-            _currentRouter = ListRouter.Name;
-        }
-
-
     }
 }

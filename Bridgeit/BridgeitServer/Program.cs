@@ -79,7 +79,7 @@ namespace BridgeitServer
 
         public void OnMessage(string message)
         {
-            
+
         }
     }
 
@@ -131,13 +131,5 @@ namespace BridgeitServer
 
     }
 
-    class Player
-    {
-        public string Name;
 
-        public Player(string name)
-        {
-            Name = name;
-        }
-    }
 }

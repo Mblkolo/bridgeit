@@ -10,8 +10,9 @@ namespace BridgeitServer
 {
     sealed class GameWorld
     {
-        private readonly Dictionary<Guid, ISystemState> _systemStates = new Dictionary<Guid, ISystemState>();
-        private readonly List<ISystemState> _undefinedSession = new List<ISystemState>();
+        private readonly Dictionary<Guid, ISystemState> _sessionWithPlayer = new Dictionary<Guid, ISystemState>();
+        private readonly List<ISystemState> _connetionWithoutPlayer = new List<ISystemState>();
+        private readonly Dictionary<Guid, Player> _playerWithoutConnection = new Dictionary<Guid, Player>();
 
         /// <summary>
         /// Пользователь подключился
@@ -19,43 +20,53 @@ namespace BridgeitServer
         /// <param name="state"></param>
         public void Connect(ISystemState state)
         {
-            _undefinedSession.Add(state);
+            _connetionWithoutPlayer.Add(state);
         }
 
         public void Disconnect(ISystemState state)
         {
-            if (state.SesionId == Guid.Empty)
-                _undefinedSession.Remove(state);
+            if (state.Player == null)
+                _connetionWithoutPlayer.Remove(state);
             else
-                _systemStates.Remove(state.SesionId);
+            {
+                //Игрок есть, а подключения нет
+                _playerWithoutConnection.Add(state.Player.Id, state.Player);
+                _sessionWithPlayer.Remove(state.Player.Id);
+            }
         }
-        //
+
         public void Join(ISystemState state, Guid sessionID)
         {
-            ISystemState __alreadySystemState;
-            if (_systemStates.TryGetValue(sessionID, out __alreadySystemState))
+            if (_sessionWithPlayer.ContainsKey(sessionID))
             {
-                __alreadySystemState.Join(state);
-                //TODO сообщить о текущем состоянии?
+                state.ShowError("Сначала старую вкладку закрой");
+                return;
             }
-            else
+
+            if (_playerWithoutConnection.ContainsKey(sessionID))
             {
-                state.SesionId = sessionID;
-                _systemStates.Add(state.SesionId, state);
+                state.Player = _playerWithoutConnection[sessionID];
+                _playerWithoutConnection.Remove(sessionID);
+                _sessionWithPlayer.Add(state.Player.Id, state);
+                state.GotoState(state.Player.State);
+                return;
             }
+
+            //Пусть логинится
+            state.FailJoin();
         }
 
-        //public void Login(IWelcomeState welcomeState, string name)
-        //{
-        //    if (_sessions.Values.Any(x => x.Name == name))
-        //    {
-        //        welcomeState.ShowErrorAsync("Имя занято, выбери другое!");
-        //        return;
-        //    }
+        public void Login(ISystemState systemState, string name)
+        {
+            if (_sessionWithPlayer.Values.Any(x => x.Player.Name == name) || _playerWithoutConnection.Values.Any(x => x.Name == name))
+            {
+                systemState.ShowErrorAsync("Имя занято, выбери другое!");
+                return;
+            }
 
-        //    welcomeState.Session.Name = name;
-        //    welcomeState.GotoListStateAsync();
-        //}
+            systemState.Player = new Player(Guid.NewGuid()) { State = PalyerState.RoomList };
+            systemState.GotoState(systemState.Player.State);
+        }
 
         readonly Dictionary<Guid, RoomSettings> _roomSettings = new Dictionary<Guid, RoomSettings>();
         readonly Dictionary<Guid, IRoomState> _roomListener = new Dictionary<Guid, IRoomState>();
@@ -69,15 +80,17 @@ namespace BridgeitServer
             roomState.SendRoomListAsync(_roomSettings.Values);
         }
 
-        public void CreateRoom(IRoomState roomState, string value)
+        public void LeaveRoomArea(IRoomState roomState)
         {
-            RoomSettings __s = RoomSettings.TryCreate(value);
-            if (__s == null)
-                return;
+            _roomSettings.Remove(roomState.Player.Id);
+            _roomListener.Remove(roomState.Player.Id);
+        }
 
-            _roomSettings[roomState.Player.Id] = __s;
+        public void CreateRoom(IRoomState roomState, RoomSettings settings)
+        {
+            _roomSettings[roomState.Player.Id] = settings;
             foreach (var __roomState in _roomListener.Values)
-                __roomState.UpdateRoomListAsync(roomState.Player.Id, __s);
+                __roomState.UpdateRoomListAsync(roomState.Player.Id, settings);
         }
 
         public void RemoveRoom(IRoomState roomState)
@@ -87,25 +100,60 @@ namespace BridgeitServer
                     __roomState.UpdateRoomListAsync(roomState.Player.Id, null);
         }
 
-        public void LeaveRoomArea(IRoomState roomState)
+        public void PlayGame(IRoomState roomState, Guid opponentID)
         {
-            _roomSettings.Remove(roomState.Player.Id);
-            _roomListener.Remove(roomState.Player.Id);
+            if (roomState.Player.Id == opponentID)
+                return;
+
+            if (!_roomSettings.ContainsKey(opponentID))
+                return;
+
+            var __settings = _roomSettings[opponentID];
+            IRoomState __opponentState = _roomListener[opponentID];
+            var __game = new Game { Player1 = __opponentState.Player, Player2 = roomState.Player, Settings = __settings };
+
+        }
+
+
+    }
+
+    class Game
+    {
+        public IPlayer Player1;
+        public IPlayer Player2;
+        public RoomSettings Settings;
+
+    }
+
+    class Player
+    {
+        public PalyerState State;
+        public string Name;
+        public readonly Guid Id;
+
+        public Player(Guid id)
+        {
+            Id = id;
         }
     }
 
     interface ISystemState
     {
-        Guid SesionId { get; set; }
-        void Join(ISystemState state);
+        Player Player { get; set; }
+        void ShowError(string message);
+        void ShowErrorAsync(string message);
+
+        void SetSessionId(Guid id);
+        void FailJoin();
+        void GotoState(PalyerState state);
     }
 
-    //interface IWelcomeState
-    //{
-    //    ISession Session { get; }
-    //    void ShowErrorAsync(string erroMessage);
-    //    void GotoListStateAsync();
-    //}
+    enum PalyerState
+    {
+        RoomList,
+        Game
+    }
+
 
     interface IRoomState
     {
@@ -113,6 +161,8 @@ namespace BridgeitServer
         void SendRoomListAsync(IEnumerable<RoomSettings> settings);
         void UpdateRoomListAsync(Guid id, RoomSettings roomSettings);
     }
+
+
 
     interface IPlayer
     {

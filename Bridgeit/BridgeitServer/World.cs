@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fleck;
-using Newtonsoft.Json;
 
 namespace BridgeitServer
 {
@@ -64,7 +63,7 @@ namespace BridgeitServer
                 return;
             }
 
-            systemState.Player = new Player(Guid.NewGuid()) { State = PalyerState.RoomList };
+            systemState.Player = new Player(Guid.NewGuid()) { State = PlayerState.RoomList };
             systemState.GotoState(systemState.Player.State);
         }
 
@@ -110,26 +109,84 @@ namespace BridgeitServer
 
             var __settings = _roomSettings[opponentID];
             IRoomState __opponentState = _roomListener[opponentID];
-            var __game = new Game { Player1 = __opponentState.Player, Player2 = roomState.Player, Settings = __settings };
 
+            var __game = new SimpleGame { Player1 = __opponentState.Player, Player2 = roomState.Player, Settings = __settings };
+            _gameList.Add(__game);
+
+            roomState.Player.State = PlayerState.Game;
+            __opponentState.Player.State = PlayerState.Game;
+            _sessionWithPlayer[roomState.Player.Id].GotoState(roomState.Player.State);
+            _sessionWithPlayer[__opponentState.Player.Id].GotoState(__opponentState.Player.State);
         }
 
+        private readonly List<SimpleGame> _gameList = new List<SimpleGame>();
+        private readonly Dictionary<Guid, IGameState> _gameStates = new Dictionary<Guid, IGameState>();
 
+
+        public void EnterTheGame(IGameState gameState)
+        {
+            _gameStates.Add(gameState.Player.Id, gameState);
+        }
+
+        public void LeaveTheGame(IGameState gameState)
+        {
+            if (!_gameStates.Remove(gameState.Player.Id))
+                return;
+
+            var __game = _gameList.FirstOrDefault(x => x.Player1 == gameState.Player || x.Player2 == gameState.Player);
+            if (__game == null)
+                return;
+
+            if (__game.Player1 == gameState.Player)
+                __game.Player1 = null;
+            if (__game.Player2 == gameState.Player)
+                __game.Player2 = null;
+
+            //Все игроки ушли
+            if (__game.Player1 == null && __game.Player2 == null)
+                _gameList.Remove(__game);
+            else
+            {
+                var __opponent = __game.Player1 ?? __game.Player2;
+                GetGameState(_gameStates[__opponent.Id]);
+            }
+            gameState.Player.State = PlayerState.RoomList;
+            _sessionWithPlayer[gameState.Player.Id].GotoState(gameState.Player.State);
+        }
+
+        public void GetGameState(IGameState gameState)
+        {
+            var __game = _gameList.FirstOrDefault(x => x.Player1 == gameState.Player || x.Player2 == gameState.Player);
+            if (__game == null)
+                return;
+
+            var __gameState = new SimpleGameState
+                {
+                    FirstPlayer = __game.Player1 == null ? null : __game.Player1.Name,
+                    SecondPlayer = __game.Player2 == null ? null : __game.Player2.Name
+                };
+            gameState.SendGameState(__gameState);
+        }
     }
 
-    class Game
+    class SimpleGameState
+    {
+        public string FirstPlayer;
+        public string SecondPlayer;
+    }
+
+    class SimpleGame
     {
         public IPlayer Player1;
         public IPlayer Player2;
         public RoomSettings Settings;
-
     }
 
-    class Player
+    class Player : IPlayer
     {
-        public PalyerState State;
-        public string Name;
-        public readonly Guid Id;
+        public PlayerState State { get; set; }
+        public string Name { get; set; }
+        public Guid Id { get; private set; }
 
         public Player(Guid id)
         {
@@ -145,10 +202,10 @@ namespace BridgeitServer
 
         void SetSessionId(Guid id);
         void FailJoin();
-        void GotoState(PalyerState state);
+        void GotoState(PlayerState state);
     }
 
-    enum PalyerState
+    enum PlayerState
     {
         RoomList,
         Game
@@ -162,12 +219,19 @@ namespace BridgeitServer
         void UpdateRoomListAsync(Guid id, RoomSettings roomSettings);
     }
 
+    interface IGameState
+    {
+        IPlayer Player { get; }
+        void SendGameState(SimpleGameState state);
+    }
+
 
 
     interface IPlayer
     {
-        string Name { get; }
         Guid Id { get; }
+        string Name { get; }
+        PlayerState State { get; set; }
     }
 
     class RoomSettings

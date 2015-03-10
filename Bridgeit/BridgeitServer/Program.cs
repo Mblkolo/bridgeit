@@ -17,12 +17,12 @@ namespace BridgeitServer
             var server = new WebSocketServer("ws://0.0.0.0:8181");
 
             var usersById = new Dictionary<Guid, List<IWebSocketConnection>>();
-            var world = new World();
+            var world = new StateManager();
 
             server.Start(socket =>
                 {
-                    var __router = new Router();
-                    __router.Init(socket, world);
+                    var __systemState = new SystemState(socket, world);
+                    __systemState.Init();
                 });
 
 
@@ -38,6 +38,22 @@ namespace BridgeitServer
         }
     }
 
+    internal class StateManager
+    {
+        public readonly GameWorld World = new GameWorld();
+
+        private readonly List<SystemState> _states = new List<SystemState>();
+        public void Add(SystemState systemState)
+        {
+            _states.Add(systemState);
+        }
+
+        internal void Remove(SystemState systemState)
+        {
+            _states.Remove(systemState);
+        }
+    }
+
     class OutboxMessage
     {
         public string area;
@@ -46,7 +62,6 @@ namespace BridgeitServer
 
         public OutboxMessage()
         {
-
         }
 
         public OutboxMessage(string area, string type, string value)
@@ -63,73 +78,5 @@ namespace BridgeitServer
         public string type;
         public string value;
     }
-
-    class Router
-    {
-        public IWebSocketConnection Connection;
-        public World World;
-        public Player Player;
-
-        public void Init(IWebSocketConnection connection, World world)
-        {
-            Connection = connection;
-            World = world;
-            Connection.OnMessage = OnMessage;
-        }
-
-        public void OnMessage(string message)
-        {
-
-        }
-    }
-
-    internal class World
-    {
-        public Dictionary<string, Player> Players = new Dictionary<string, Player>();
-
-        public List<Player> RoomListeners = new List<Player>();
-        public List<Room> Rooms = new List<Room>();
-
-        //Игрок зашёл в комнаты
-        public void JoinRooms(Player player)
-        {
-            RoomListeners.Add(player);
-            //TODO отослать пользователю текущее состояние
-        }
-
-        //Игрок покидает комнтау
-        public void LeaveRooms(Player player)
-        {
-            RemoveRoom(player);
-            RoomListeners.Remove(player);
-        }
-
-        public void RemoveRoom(Player player)
-        {
-            //TODO игрок хочет удалить свою комнату
-        }
-
-        public void CreateRoom(Player player)
-        {
-            //TODO игрок создаёт свою комнату
-        }
-
-
-
-        public void NotifyAllPlayer()
-        {
-            //TODO тут типа делаем рассылку всем пользователям
-        }
-
-
-    }
-
-    class Room
-    {
-
-
-
-    }
-
 
 }

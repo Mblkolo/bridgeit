@@ -116,6 +116,7 @@ namespace BridgeitServer
             _socket = socket;
         }
 
+        #region IRoomState
 
         public IPlayer Player { get; private set; }
         public void UpdateRoomListAsync(Dictionary<Guid, RoomSettings> settings)
@@ -124,6 +125,8 @@ namespace BridgeitServer
             var __outMessage = Newtonsoft.Json.JsonConvert.SerializeObject(__dto);
             _socket.Send(__outMessage);
         }
+
+        #endregion
 
         #region IInboxState
 
@@ -162,6 +165,54 @@ namespace BridgeitServer
 
         public string StateName { get { return Name; } }
         public static readonly string Name = "roomList";
+
+        #endregion
+    }
+
+    class GameSate : IGameState, IInboxState
+    {
+        private readonly GameWorld _world;
+        private readonly IWebSocketConnection _socket;
+
+        public GameSate(GameWorld world, IPlayer player, IWebSocketConnection socket)
+        {
+            _world = world;
+            Player = player;
+            _socket = socket;
+        }
+
+        #region IGameState
+
+        public IPlayer Player { get; private set; }
+
+        public void SendGameState(SimpleGameState state)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+
+
+        #region IGameState
+
+        public void OnEnter()
+        {
+            _world.EnterTheGame(this);
+        }
+
+        public void OnMessage(string message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnLeave()
+        {
+            _world.LeaveTheGame(this);
+        }
+
+        public string StateName { get { return Name; } }
+
+        public static readonly string Name = "game";
 
         #endregion
     }

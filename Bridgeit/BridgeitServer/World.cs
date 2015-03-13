@@ -38,7 +38,7 @@ namespace BridgeitServer
         {
             if (_sessionWithPlayer.ContainsKey(sessionID))
             {
-                state.ShowError("Сначала старую вкладку закрой");
+                state.ShowErrorAsync("Сначала старую вкладку закрой");
                 return;
             }
 
@@ -76,7 +76,7 @@ namespace BridgeitServer
         public void EnterRoomsArea(IRoomState roomState)
         {
             _roomListener[roomState.Player.Id] = roomState;
-            roomState.SendRoomListAsync(_roomSettings.Values);
+            roomState.UpdateRoomListAsync(_roomSettings);
         }
 
         public void LeaveRoomArea(IRoomState roomState)
@@ -89,14 +89,14 @@ namespace BridgeitServer
         {
             _roomSettings[roomState.Player.Id] = settings;
             foreach (var __roomState in _roomListener.Values)
-                __roomState.UpdateRoomListAsync(roomState.Player.Id, settings);
+                __roomState.UpdateRoomListAsync(new Dictionary<Guid, RoomSettings> { { roomState.Player.Id, settings } });
         }
 
         public void RemoveRoom(IRoomState roomState)
         {
             if (_roomSettings.Remove(roomState.Player.Id))
                 foreach (var __roomState in _roomListener.Values)
-                    __roomState.UpdateRoomListAsync(roomState.Player.Id, null);
+                    __roomState.UpdateRoomListAsync(new Dictionary<Guid, RoomSettings> { { roomState.Player.Id, null } });
         }
 
         public void PlayGame(IRoomState roomState, Guid opponentID)
@@ -197,7 +197,6 @@ namespace BridgeitServer
     interface ISystemState
     {
         Player Player { get; set; }
-        void ShowError(string message);
         void ShowErrorAsync(string message);
 
         void SetSessionId(Guid id);
@@ -215,8 +214,7 @@ namespace BridgeitServer
     interface IRoomState
     {
         IPlayer Player { get; }
-        void SendRoomListAsync(IEnumerable<RoomSettings> settings);
-        void UpdateRoomListAsync(Guid id, RoomSettings roomSettings);
+        void UpdateRoomListAsync(Dictionary<Guid, RoomSettings> settings);
     }
 
     interface IGameState
@@ -236,10 +234,8 @@ namespace BridgeitServer
 
     class RoomSettings
     {
-        public static RoomSettings TryCreate(string value)
-        {
-            throw new NotImplementedException();
-        }
+        public Guid Id;
+        public string Text;
     }
 
 

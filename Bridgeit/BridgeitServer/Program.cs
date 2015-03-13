@@ -54,29 +54,6 @@ namespace BridgeitServer
         }
     }
 
-    class OutboxMessage
-    {
-        public string area;
-        public string type;
-        public string value;
 
-        public OutboxMessage()
-        {
-        }
-
-        public OutboxMessage(string area, string type, string value)
-        {
-            this.area = area;
-            this.type = type;
-            this.value = value;
-        }
-    }
-
-    class InboxMessage
-    {
-        public string session;
-        public string type;
-        public string value;
-    }
 
 }

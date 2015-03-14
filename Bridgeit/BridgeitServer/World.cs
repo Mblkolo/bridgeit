@@ -67,6 +67,17 @@ namespace BridgeitServer
             systemState.GotoState(systemState.Player.State);
         }
 
+        public void Logout(ISystemState systemState)
+        {
+            if (systemState.Player == null)
+                return;
+
+            _sessionWithPlayer.Remove(systemState.Player.Id);
+            systemState.Player = null;
+            _connetionWithoutPlayer.Add(systemState);
+            systemState.GotoWelcomeState();
+        }
+
         readonly Dictionary<Guid, RoomSettings> _roomSettings = new Dictionary<Guid, RoomSettings>();
         readonly Dictionary<Guid, IRoomState> _roomListener = new Dictionary<Guid, IRoomState>();
 
@@ -202,6 +213,7 @@ namespace BridgeitServer
         void SetSessionId(Guid id);
         void FailJoin();
         void GotoState(PlayerState state);
+        void GotoWelcomeState();
     }
 
     enum PlayerState
@@ -234,41 +246,7 @@ namespace BridgeitServer
 
     class RoomSettings
     {
-        public Guid Id;
         public string Text;
     }
 
-
-
-    class Session
-    {
-        private readonly GameWorld _world;
-
-        public readonly List<IWebSocketConnection> Connections = new List<IWebSocketConnection>();
-        public readonly Guid Id = Guid.NewGuid();
-        public string Name;
-
-        public Session(GameWorld world)
-        {
-            _world = world;
-        }
-
-        public void Join(IWebSocketConnection connection)
-        {
-            Connections.Add(connection);
-            connection.OnMessage = OnMessage;
-            connection.OnClose = () => OnClose(connection);
-            connection.OnError = error => OnClose(connection);
-        }
-
-        private void OnMessage(string message)
-        {
-            //Routers[_currentRouter](this, _world, message);
-        }
-
-        private void OnClose(IWebSocketConnection connection)
-        {
-            Connections.Remove(connection);
-        }
-    }
 }

@@ -38,7 +38,7 @@ namespace BridgeitServer
         {
             //Маршрутизация
             var __inbox = Newtonsoft.Json.JsonConvert.DeserializeObject<InboxMessage>(message);
-            if (__inbox.type != "system")
+            if (__inbox.area != "system" && __inbox.area != "welcome")
             {
                 if (Player == null || __inbox.session != Player.Id)
                     return;
@@ -50,15 +50,24 @@ namespace BridgeitServer
                 return;
             }
 
-            switch (__inbox.value)
+            if(__inbox.area == "system")
             {
-                case "Join":
-                    _stateManager.World.Join(this, __inbox.session);
-                    break;
+                switch (__inbox.type)
+                {
+                    case "join":
+                        _stateManager.World.Join(this, __inbox.session);
+                        break;
 
-                case "Login":
-                    _stateManager.World.Login(this, __inbox.value);
-                    break;
+                    case "login":
+                        _stateManager.World.Login(this, __inbox.value);
+                        break;
+
+                    case "logout":
+                        if (_currentState != null)
+                            _currentState.OnLeave();
+                        _stateManager.World.Logout(this);
+                        break;
+                }
             }
         }
 
@@ -66,26 +75,37 @@ namespace BridgeitServer
 
         public void ShowErrorAsync(string message)
         {
-            Send("ShowError", message);
+            Send("showError", message);
         }
 
         public void SetSessionId(Guid id)
         {
-            Send("SetSessionId", id.ToString());
+            Send("setSessionId", id.ToString());
         }
 
         public void FailJoin()
         {
-            Send("FailJoin", "");
+            Send("failJoin", "");
         }
 
         public void GotoState(PlayerState state)
         {
+            if (_currentState != null)
+                _currentState.OnLeave();
+
             if (state == PlayerState.RoomList)
                 _currentState = new RoomListState(_stateManager.World, Player, _socket);
+            if (state == PlayerState.Game)
+                _currentState = new GameSate(_stateManager.World, Player, _socket);
 
-            //TODO всё сложнее
-            Send("GotoState", state.ToString());
+            _currentState.OnEnter();
+
+            Send("changeArea", state.ToString());
+        }
+
+        public void GotoWelcomeState()
+        {
+            Send("changeArea", "welcomeState");
         }
 
         void Send(string type, string message)
@@ -264,8 +284,21 @@ namespace BridgeitServer
     class InboxMessage
     {
         public Guid session;
+        public string area;
         public string type;
         public string value;
+
+        public InboxMessage()
+        {
+        }
+
+        public InboxMessage(Guid session, string type, string value, string area)
+        {
+            this.session = session;
+            this.type = type;
+            this.value = value;
+            this.area = area;
+        }
     }
 
 

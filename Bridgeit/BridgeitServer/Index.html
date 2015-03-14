@@ -27,7 +27,7 @@
                     Log.innerHTML += '.. connection started<br/>';
                     __ws.onopen = function () {
                         Log.innerHTML += '.. connection open<br/>';
-                        __ws.send(JSON.stringify({ type: "join", session: Bag.getItem('session') }));
+                        __ws.send(JSON.stringify({area: "system", type: "join", session: Bag.getItem('session') }));
                     };
                     __ws.onclose = function () { Log.innerHTML += '.. connection closed<br/>'; }; //И тут тоже больше ничего полезного
                     __ws.onmessage = function (evt) {
@@ -145,8 +145,14 @@
                 __states[RoomsState.area] = RoomsState;
 
                 function systemRoute(data) {
-                    if (data.type == "setSession")
+                    if (data.type == "setSessionId")
                         Bag.setItem("session", data.value);
+
+                    if (data.type == "failJoin") {
+                        __currentState.leave();
+                        __currentState = __states[WelcomeState.area];
+                        __currentState.enter();
+                    }
 
                     if (data.type == "changeArea") {
                         __currentState.leave();

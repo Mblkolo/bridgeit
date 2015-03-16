@@ -54,42 +54,10 @@ namespace BridgeitServer
 
         public void ConfigureConnection(IWebSocketConnection connection)
         {
-            new ConnectionProxy(connection);
-        }
-    }
-
-    class AnonumouseHandler : IConnectionHandler
-    {
-
-
-
-        public void OnError(Exception e)
-        {
-            OnClose();
-        }
-
-        public void OnClose()
-        {
-            //Подключение закрыто, а значит ЭТОТ объект больше не нужен
-            //Нужен способ сообщить о том, что нужно выйти из этого состояния
-            throw new NotImplementedException();
-        }
-
-        public void OnOpen()
-        {
-            //Ничего не делаем
-        }
-
-        public void OnMessage(string message)
-        {
-            var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
-            if (__inbox.type != "join")
-                return;
-
-            //Пытаемся подключить на новых условиях 
 
         }
     }
+
 
     //Убер класс, умеет всё
     class HighStateMashine : IConnectionHandler
@@ -100,9 +68,10 @@ namespace BridgeitServer
 
         public readonly SharedStateData SharedData;
 
-        public HighStateMashine(SharedStateData sharedData)
+        public HighStateMashine(SharedStateData sharedData, IWebSocketConnection connection)
         {
             SharedData = sharedData;
+            _proxy = new ConnectionProxy(connection) { Handler = this };
         }
 
         #region обрабтка сообщений
@@ -134,9 +103,11 @@ namespace BridgeitServer
         #endregion
 
         #region Переключение состояний
+
         private void StateAnonim()
         {
             State = PossibleState.Anonim;
+            SharedData.LiveConnection.Add(this);
         }
 
         private void StateClose()
@@ -145,48 +116,97 @@ namespace BridgeitServer
                 LeaveStateConnected();
 
             State = PossibleState.Close;
+            SharedData.LiveConnection.Remove(this);
         }
 
-        private void StateConnected()
+        private void StateConnected(Guid id)
         {
             State = PossibleState.Connected;
+
+            if (SharedData.AbandonedLowSm.TryGetValue(id, out _currentLowMashine))
+                SharedData.AbandonedLowSm.Remove(id);
+            else
+                _currentLowMashine = new LowStateMashine(SharedData);
+
+            _currentLowMashine.OnConnect(Send);
+            Send(new OutboxMessage("system", "changeArea", _currentLowMashine.Area));
         }
 
         private void LeaveStateConnected()
         {
             SharedData.AbandonedLowSm.Add(_currentLowMashine.Id, _currentLowMashine);
+            _currentLowMashine.OnDisconnect(); ;
         }
 
         #endregion
 
         private LowStateMashine _currentLowMashine;
+        private readonly ConnectionProxy _proxy;
+
         private void OnMessageAnonim(string message)
         {
             var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
             if (__inbox.type != "join")
                 return;
 
-            if (SharedData.AbandonedLowSm.TryGetValue(__inbox.session, out _currentLowMashine))
-                SharedData.AbandonedLowSm.Remove(__inbox.session);
-            else
-                _currentLowMashine = new LowStateMashine();
-
-            StateConnected();
+            StateConnected(__inbox.session);
         }
 
         private void OnMessageConnected(string message)
         {
-            _currentLowMashine.OnMessage();
+            //предварительаня обработка соощений
+            var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
+            if (__inbox.session != _currentLowMashine.Id)
+                return; //TODO может перелогиниться?
+
+            if (__inbox.area != "system")
+                _currentLowMashine.OnMessage(message);
+
+            if (__inbox.type == "logout")
+            {
+                StateClose();
+                Send(new OutboxMessage("system", "logout", null));
+            }
+        }
+
+        private bool Send(OutboxMessage outbox)
+        {
+            if (State != PossibleState.Connected)
+                return false;
+
+            var __message = JsonConvert.SerializeObject(outbox);
+            _proxy.Send(__message);
+            return true;
         }
     }
 
     class LowStateMashine
     {
         public readonly Guid Id = Guid.NewGuid();
+        public string Area { get; private set; }
+        public readonly SharedStateData SharedData;
+        private Func<OutboxMessage, bool> _sendHandler;
 
-        public void OnMessage()
+
+        public LowStateMashine(SharedStateData data)
+        {
+            SharedData = data;
+            Area = "welcome";
+        }
+
+        public void OnMessage(string message)
         {
 
+        }
+
+        public void OnConnect(Func<OutboxMessage, bool> sendHandler)
+        {
+            _sendHandler = sendHandler;
+        }
+
+        public void OnDisconnect()
+        {
+            _sendHandler = null;
         }
 
     }
@@ -194,7 +214,7 @@ namespace BridgeitServer
     class SharedStateData
     {
         public readonly Dictionary<Guid, LowStateMashine> AbandonedLowSm = new Dictionary<Guid, LowStateMashine>();
-
+        public readonly List<HighStateMashine> LiveConnection = new List<HighStateMashine>();
     }
 
 

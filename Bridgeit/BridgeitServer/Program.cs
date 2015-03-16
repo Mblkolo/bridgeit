@@ -62,7 +62,7 @@ namespace BridgeitServer
     {
 
 
-        
+
         public void OnError(Exception e)
         {
             OnClose();
@@ -89,6 +89,112 @@ namespace BridgeitServer
             //Пытаемся подключить на новых условиях 
 
         }
+    }
+
+    //Убер класс, умеет всё
+    class HighStateMashine : IConnectionHandler
+    {
+        public enum PossibleState { None, Anonim, Connected, Close }
+
+        public PossibleState State;
+
+        public readonly SharedStateData SharedData;
+
+        public HighStateMashine(SharedStateData sharedData)
+        {
+            SharedData = sharedData;
+        }
+
+        #region обрабтка сообщений
+
+        public void OnError(Exception e)
+        {
+            OnClose();
+        }
+
+        public void OnClose()
+        {
+            StateClose();
+        }
+
+        public void OnOpen()
+        {
+            if (State == PossibleState.None)
+                StateAnonim();
+        }
+
+        public void OnMessage(string message)
+        {
+            if (State == PossibleState.Anonim)
+                OnMessageAnonim(message);
+            if (State == PossibleState.Connected)
+                OnMessageConnected(message);
+        }
+
+        #endregion
+
+        #region Переключение состояний
+        private void StateAnonim()
+        {
+            State = PossibleState.Anonim;
+        }
+
+        private void StateClose()
+        {
+            if (State == PossibleState.Connected)
+                LeaveStateConnected();
+
+            State = PossibleState.Close;
+        }
+
+        private void StateConnected()
+        {
+            State = PossibleState.Connected;
+        }
+
+        private void LeaveStateConnected()
+        {
+            SharedData.AbandonedLowSm.Add(_currentLowMashine.Id, _currentLowMashine);
+        }
+
+        #endregion
+
+        private LowStateMashine _currentLowMashine;
+        private void OnMessageAnonim(string message)
+        {
+            var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
+            if (__inbox.type != "join")
+                return;
+
+            if (SharedData.AbandonedLowSm.TryGetValue(__inbox.session, out _currentLowMashine))
+                SharedData.AbandonedLowSm.Remove(__inbox.session);
+            else
+                _currentLowMashine = new LowStateMashine();
+
+            StateConnected();
+        }
+
+        private void OnMessageConnected(string message)
+        {
+            _currentLowMashine.OnMessage();
+        }
+    }
+
+    class LowStateMashine
+    {
+        public readonly Guid Id = Guid.NewGuid();
+
+        public void OnMessage()
+        {
+
+        }
+
+    }
+
+    class SharedStateData
+    {
+        public readonly Dictionary<Guid, LowStateMashine> AbandonedLowSm = new Dictionary<Guid, LowStateMashine>();
+
     }
 
 

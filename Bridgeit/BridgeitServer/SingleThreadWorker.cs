@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 namespace BridgeitServer
 {
     interface ISingleThreadHandler<in TInput>
-        where TInput : new()
     {
         void Handle(TInput item);
         void OnStop();
@@ -19,7 +18,6 @@ namespace BridgeitServer
     /// </summary>
     /// <typeparam name="TInput">Тип обрабатываемых элементов</typeparam>
     class SingleThreadWorker<TInput>
-        where TInput : new()
     {
         readonly ConcurrentQueue<TInput> _input = new ConcurrentQueue<TInput>();
         readonly ISingleThreadHandler<TInput> _handler;

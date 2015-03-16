@@ -41,8 +41,16 @@ namespace BridgeitServer
     {
         public readonly GameWorld World = new GameWorld();
         public readonly SharedStateData SharedData = new SharedStateData();
+        public readonly SingleThreadWorker<Action> SingleThread;
 
         private readonly List<SystemState> _states = new List<SystemState>();
+
+        public StateManager()
+        {
+            SingleThread = new SingleThreadWorker<Action>(new SimpleSingleThread());
+            SingleThread.Start();
+        }
+
         public void Add(SystemState systemState)
         {
             _states.Add(systemState);
@@ -55,8 +63,27 @@ namespace BridgeitServer
 
         public void ConfigureConnection(IWebSocketConnection connection)
         {
-            new HighStateMashine(SharedData, connection);
+            var __proxy = new ConnectionProxy(connection, SingleThread);
+            var __highMashine = new HighStateMashine(SharedData, __proxy);
+            __proxy.Handler = __highMashine;
         }
+    }
+
+    class SimpleSingleThread : ISingleThreadHandler<Action>
+    {
+        public void Handle(Action item)
+        {
+            item();
+        }
+
+        public void OnStop()
+        {
+            IsStopped = true;
+        }
+
+        public bool IsStopped { get; private set; }
+
+        public Action<Action> Send { get; set; }
     }
 
 
@@ -69,10 +96,10 @@ namespace BridgeitServer
 
         public readonly SharedStateData SharedData;
 
-        public HighStateMashine(SharedStateData sharedData, IWebSocketConnection connection)
+        public HighStateMashine(SharedStateData sharedData, ConnectionProxy proxy)
         {
             SharedData = sharedData;
-            _proxy = new ConnectionProxy(connection) { Handler = this };
+            _proxy = proxy;
         }
 
         #region обрабтка сообщений
@@ -233,8 +260,11 @@ namespace BridgeitServer
     //создают новое состояние в игре или прикрепляют к уже существующему
     sealed class ConnectionProxy
     {
-        public ConnectionProxy(IWebSocketConnection connection)
+        private readonly SingleThreadWorker<Action> _singleThread;
+
+        public ConnectionProxy(IWebSocketConnection connection, SingleThreadWorker<Action> singleThread)
         {
+            _singleThread = singleThread;
             Connection = connection;
             connection.OnMessage = OnMessage;
             connection.OnOpen = OnOpen;
@@ -250,25 +280,25 @@ namespace BridgeitServer
         private void OnError(Exception e)
         {
             if (Handler != null)
-                Handler.OnError(e);
+                _singleThread.Put(() => Handler.OnError(e));
         }
 
         private void OnClose()
         {
             if (Handler != null)
-                Handler.OnClose();
+                _singleThread.Put(() => Handler.OnClose());
         }
 
         private void OnOpen()
         {
             if (Handler != null)
-                Handler.OnOpen();
+                _singleThread.Put(() => Handler.OnOpen());
         }
 
         private void OnMessage(string message)
         {
             if (Handler != null)
-                Handler.OnMessage(message);
+                _singleThread.Put(() => Handler.OnMessage(message));
         }
 
         public IWebSocketConnection Connection { get; private set; }

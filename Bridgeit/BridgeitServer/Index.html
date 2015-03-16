@@ -27,7 +27,7 @@
                     Log.innerHTML += '.. connection started<br/>';
                     __ws.onopen = function () {
                         Log.innerHTML += '.. connection open<br/>';
-                        __ws.send(JSON.stringify({area: "system", type: "join", session: Bag.getItem('session') }));
+                        __ws.send(JSON.stringify({area: "system", type: "join", value: Bag.getItem('session') }));
                     };
                     __ws.onclose = function () { Log.innerHTML += '.. connection closed<br/>'; }; //И тут тоже больше ничего полезного
                     __ws.onmessage = function (evt) {

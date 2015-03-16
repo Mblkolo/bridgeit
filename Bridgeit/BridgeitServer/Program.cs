@@ -40,6 +40,7 @@ namespace BridgeitServer
     internal class StateManager
     {
         public readonly GameWorld World = new GameWorld();
+        public readonly SharedStateData SharedData = new SharedStateData();
 
         private readonly List<SystemState> _states = new List<SystemState>();
         public void Add(SystemState systemState)
@@ -54,7 +55,7 @@ namespace BridgeitServer
 
         public void ConfigureConnection(IWebSocketConnection connection)
         {
-
+            new HighStateMashine(SharedData, connection);
         }
     }
 
@@ -96,7 +97,7 @@ namespace BridgeitServer
         {
             if (State == PossibleState.Anonim)
                 OnMessageAnonim(message);
-            if (State == PossibleState.Connected)
+            else if (State == PossibleState.Connected)
                 OnMessageConnected(message);
         }
 
@@ -117,16 +118,23 @@ namespace BridgeitServer
 
             State = PossibleState.Close;
             SharedData.LiveConnection.Remove(this);
+
+            _proxy.Handler = null;
+            _proxy = null;
         }
 
-        private void StateConnected(Guid id)
+        private void StateConnected(string id)
         {
             State = PossibleState.Connected;
 
-            if (SharedData.AbandonedLowSm.TryGetValue(id, out _currentLowMashine))
-                SharedData.AbandonedLowSm.Remove(id);
+            Guid __id;
+            if (Guid.TryParse(id, out __id) && SharedData.AbandonedLowSm.TryGetValue(__id, out _currentLowMashine))
+                SharedData.AbandonedLowSm.Remove(__id);
             else
+            {
                 _currentLowMashine = new LowStateMashine(SharedData);
+                Send(new OutboxMessage("system", "setSessionId", _currentLowMashine.Id.ToString()));
+            }
 
             _currentLowMashine.OnConnect(Send);
             Send(new OutboxMessage("system", "changeArea", _currentLowMashine.Area));
@@ -135,13 +143,13 @@ namespace BridgeitServer
         private void LeaveStateConnected()
         {
             SharedData.AbandonedLowSm.Add(_currentLowMashine.Id, _currentLowMashine);
-            _currentLowMashine.OnDisconnect(); ;
+            _currentLowMashine.OnDisconnect();
         }
 
         #endregion
 
         private LowStateMashine _currentLowMashine;
-        private readonly ConnectionProxy _proxy;
+        private ConnectionProxy _proxy;
 
         private void OnMessageAnonim(string message)
         {
@@ -149,7 +157,7 @@ namespace BridgeitServer
             if (__inbox.type != "join")
                 return;
 
-            StateConnected(__inbox.session);
+            StateConnected(__inbox.value);
         }
 
         private void OnMessageConnected(string message)

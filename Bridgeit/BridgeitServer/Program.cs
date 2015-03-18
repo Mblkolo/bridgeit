@@ -39,11 +39,11 @@ namespace BridgeitServer
     /// </summary>
     internal class StateManager
     {
-        public readonly GameWorld World = new GameWorld();
+        //public readonly GameWorld World = new GameWorld();
         public readonly SharedStateData SharedData = new SharedStateData();
         public readonly SingleThreadWorker<Action> SingleThread;
 
-        private readonly List<SystemState> _states = new List<SystemState>();
+        //private readonly List<SystemState> _states = new List<SystemState>();
 
         public StateManager()
         {
@@ -51,15 +51,15 @@ namespace BridgeitServer
             SingleThread.Start();
         }
 
-        public void Add(SystemState systemState)
-        {
-            _states.Add(systemState);
-        }
+        //public void Add(SystemState systemState)
+        //{
+        //    _states.Add(systemState);
+        //}
 
-        public void Remove(SystemState systemState)
-        {
-            _states.Remove(systemState);
-        }
+        //public void Remove(SystemState systemState)
+        //{
+        //    _states.Remove(systemState);
+        //}
 
         public void ConfigureConnection(IWebSocketConnection connection)
         {
@@ -155,8 +155,8 @@ namespace BridgeitServer
             State = PossibleState.Connected;
 
             Guid __id;
-            if (Guid.TryParse(id, out __id) && SharedData.AbandonedLowSm.TryGetValue(__id, out _currentSessionMashine))
-                SharedData.AbandonedLowSm.Remove(__id);
+            if (Guid.TryParse(id, out __id) && SharedData.AbandonedLowFsm.TryGetValue(__id, out _currentSessionMashine))
+                SharedData.AbandonedLowFsm.Remove(__id);
             else
             {
                 _currentSessionMashine = new SessionStateMashine(SharedData);
@@ -169,7 +169,7 @@ namespace BridgeitServer
 
         private void LeaveStateConnected()
         {
-            SharedData.AbandonedLowSm.Add(_currentSessionMashine.Id, _currentSessionMashine);
+            SharedData.AbandonedLowFsm.Add(_currentSessionMashine.Id, _currentSessionMashine);
             _currentSessionMashine.OnDisconnect();
         }
 
@@ -199,6 +199,7 @@ namespace BridgeitServer
 
             if (__inbox.type == "logout")
             {
+                //TODO сделать настоящий разлогин, с уничтожением сессии
                 StateClose();
                 Send(new OutboxMessage("system", "logout", null));
             }
@@ -222,6 +223,7 @@ namespace BridgeitServer
         public readonly SharedStateData SharedData;
         private Func<OutboxMessage, bool> _sendHandler;
 
+        private Player _player;
 
         public SessionStateMashine(SharedStateData data)
         {
@@ -231,7 +233,74 @@ namespace BridgeitServer
 
         public void OnMessage(string message)
         {
+            if (_sendHandler == null)
+                return;
 
+            var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
+            if (__inbox.area != Area || __inbox.session != Id)
+                return;
+
+            if (Area == "welcome")
+                OnWelcomeAreaMessage(__inbox, message);
+            else if (Area == "rooms")
+                OnRoomsAreaMessage(__inbox, message);
+        }
+
+        private void OnWelcomeAreaMessage(InboxMessage inbox, string message)
+        {
+            if (inbox.type == "login" && _player == null)
+            {
+                if (!string.IsNullOrWhiteSpace(inbox.value))
+                {
+                    if (SharedData.Players.Values.Any(x => x.Name == inbox.value))
+                        Send("showError", "Имя занято, выбери другое");
+                    else
+                    {
+                        _player = new Player(inbox.value);
+                        AreaRooms();
+                    }
+                }
+            }
+        }
+
+        private void OnRoomsAreaMessage(InboxMessage inbox, string message)
+        {
+            if (inbox.type == "createRoom")
+            {
+                var __inbox = JsonConvert.DeserializeObject<RoomSettingsInboxMessage>(message);
+                if (__inbox.fieldSize < 3 || __inbox.fieldSize < 10)
+                    return; //TODO выругаться
+
+                if (!SharedData.RoomsSettings.ContainsKey(_player.Name))
+                    return;
+
+                var __newSettings = new RoomSettings { Size = __inbox.fieldSize };
+                SharedData.RoomsSettings.Add(_player.Name, __newSettings);
+
+                var __updateData = new Dictionary<string, RoomSettings> { { _player.Name, __newSettings } };
+                foreach (var __listener in SharedData.RoomsListeners.Values)
+                    __listener.UpdateRoomList(__updateData);
+            }
+            else if (inbox.type == "removeRoom")
+            {
+                if (SharedData.RoomsSettings.Remove(_player.Name))
+                {
+                    var __updateData = new Dictionary<string, RoomSettings> { { _player.Name, null } };
+                    foreach (var __listener in SharedData.RoomsListeners.Values)
+                        __listener.UpdateRoomList(__updateData);
+                }
+            }
+        }
+
+        private void Send(string type, string value)
+        {
+            Send(new OutboxMessage("welcome", type, value));
+        }
+
+        private void Send(OutboxMessage outbox)
+        {
+            if (_sendHandler != null)
+                _sendHandler(outbox);
         }
 
         public void OnConnect(Func<OutboxMessage, bool> sendHandler)
@@ -244,14 +313,52 @@ namespace BridgeitServer
             _sendHandler = null;
         }
 
+        #region переключение областей
+        private void AreaRooms()
+        {
+            //Вход в список комнат
+            Area = "rooms";
+
+            //Дейсвтия по входу в комнату
+            var __roomListener = new RoomsAreaListener(this);
+            SharedData.RoomsListeners.Add(_player.Name, __roomListener);
+
+            Send(new OutboxMessage("system", "changeArea", Area));
+            __roomListener.UpdateRoomList(SharedData.RoomsSettings);
+        }
+        #endregion
+
+        private class RoomsAreaListener : IRoomsAreaListener
+        {
+            private readonly SessionStateMashine _sessionFsm;
+            public RoomsAreaListener(SessionStateMashine sessionFsm)
+            {
+                _sessionFsm = sessionFsm;
+            }
+
+            public void UpdateRoomList(Dictionary<string, RoomSettings> roomsSettings)
+            {
+                var __outbox = new RoomSettingsOutboxMessage("rooms", "updateRoomList", roomsSettings);
+                _sessionFsm.Send(__outbox);
+            }
+        }
     }
+
 
     class SharedStateData
     {
-        public readonly Dictionary<Guid, SessionStateMashine> AbandonedLowSm = new Dictionary<Guid, SessionStateMashine>();
+        public readonly Dictionary<Guid, SessionStateMashine> AbandonedLowFsm = new Dictionary<Guid, SessionStateMashine>();
         public readonly List<ConnectionStateMashine> LiveConnection = new List<ConnectionStateMashine>();
+        public readonly Dictionary<string, Player> Players = new Dictionary<string, Player>();
+
+        public readonly Dictionary<string, RoomSettings> RoomsSettings = new Dictionary<string, RoomSettings>();
+        public readonly Dictionary<string, IRoomsAreaListener> RoomsListeners = new Dictionary<string, IRoomsAreaListener>();
     }
 
+    interface IRoomsAreaListener
+    {
+        void UpdateRoomList(Dictionary<string, RoomSettings> roomsSettings);
+    }
 
     //Концепция такая
     //Подключившийся пользователь сразу от рождения имеет сессию (он же подключен)

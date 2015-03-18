@@ -7,114 +7,114 @@ using Fleck;
 
 namespace BridgeitServer
 {
-    sealed class SystemState : ISystemState
-    {
-        private readonly IWebSocketConnection _socket;
-        private readonly StateManager _stateManager;
-        private IInboxState _currentState;
+    //sealed class SystemState : ISystemState
+    //{
+    //    private readonly IWebSocketConnection _socket;
+    //    private readonly StateManager _stateManager;
+    //    private IInboxState _currentState;
 
-        public SystemState(IWebSocketConnection socket, StateManager stateManager)
-        {
-            _socket = socket;
-            _stateManager = stateManager;
-        }
+    //    public SystemState(IWebSocketConnection socket, StateManager stateManager)
+    //    {
+    //        _socket = socket;
+    //        _stateManager = stateManager;
+    //    }
 
-        public void Init()
-        {
-            _stateManager.Add(this);
-            _socket.OnOpen = () => _stateManager.World.Connect(this);
-            _socket.OnClose = OnClose;
-            _socket.OnError = x => OnClose();
-            _socket.OnMessage = OnMessage;
-        }
+    //    public void Init()
+    //    {
+    //        _stateManager.Add(this);
+    //        _socket.OnOpen = () => _stateManager.World.Connect(this);
+    //        _socket.OnClose = OnClose;
+    //        _socket.OnError = x => OnClose();
+    //        _socket.OnMessage = OnMessage;
+    //    }
 
-        private void OnClose()
-        {
-            _stateManager.World.Disconnect(this);
-            _stateManager.Remove(this);
-        }
+    //    private void OnClose()
+    //    {
+    //        _stateManager.World.Disconnect(this);
+    //        _stateManager.Remove(this);
+    //    }
 
-        private void OnMessage(string message)
-        {
-            //Маршрутизация
-            var __inbox = Newtonsoft.Json.JsonConvert.DeserializeObject<InboxMessage>(message);
-            if (__inbox.area != "system" && __inbox.area != "welcome")
-            {
-                if (Player == null || __inbox.session != Player.Id)
-                    return;
+    //    private void OnMessage(string message)
+    //    {
+    //        //Маршрутизация
+    //        var __inbox = Newtonsoft.Json.JsonConvert.DeserializeObject<InboxMessage>(message);
+    //        if (__inbox.area != "system" && __inbox.area != "welcome")
+    //        {
+    //            if (Player == null || __inbox.session != Player.Id)
+    //                return;
 
-                if (_currentState.StateName != __inbox.type)
-                    return;
+    //            if (_currentState.StateName != __inbox.type)
+    //                return;
 
-                _currentState.OnMessage(message);
-                return;
-            }
+    //            _currentState.OnMessage(message);
+    //            return;
+    //        }
 
-            if(__inbox.area == "system")
-            {
-                switch (__inbox.type)
-                {
-                    case "join":
-                        _stateManager.World.Join(this, __inbox.session);
-                        break;
+    //        if (__inbox.area == "system")
+    //        {
+    //            switch (__inbox.type)
+    //            {
+    //                case "join":
+    //                    _stateManager.World.Join(this, __inbox.session);
+    //                    break;
 
-                    case "login":
-                        _stateManager.World.Login(this, __inbox.value);
-                        break;
+    //                case "login":
+    //                    _stateManager.World.Login(this, __inbox.value);
+    //                    break;
 
-                    case "logout":
-                        if (_currentState != null)
-                            _currentState.OnLeave();
-                        _stateManager.World.Logout(this);
-                        break;
-                }
-            }
-        }
+    //                case "logout":
+    //                    if (_currentState != null)
+    //                        _currentState.OnLeave();
+    //                    _stateManager.World.Logout(this);
+    //                    break;
+    //            }
+    //        }
+    //    }
 
-        public Player Player { get; set; }
+    //    public Player Player { get; set; }
 
-        public void ShowErrorAsync(string message)
-        {
-            Send("showError", message);
-        }
+    //    public void ShowErrorAsync(string message)
+    //    {
+    //        Send("showError", message);
+    //    }
 
-        public void SetSessionId(Guid id)
-        {
-            Send("setSessionId", id.ToString());
-        }
+    //    public void SetSessionId(Guid id)
+    //    {
+    //        Send("setSessionId", id.ToString());
+    //    }
 
-        public void FailJoin()
-        {
-            Send("failJoin", "");
-        }
+    //    public void FailJoin()
+    //    {
+    //        Send("failJoin", "");
+    //    }
 
-        public void GotoState(PlayerState state)
-        {
-            if (_currentState != null)
-                _currentState.OnLeave();
+    //    public void GotoState(PlayerState state)
+    //    {
+    //        if (_currentState != null)
+    //            _currentState.OnLeave();
 
-            if (state == PlayerState.RoomList)
-                _currentState = new RoomListState(_stateManager.World, Player, _socket);
-            if (state == PlayerState.Game)
-                _currentState = new GameSate(_stateManager.World, Player, _socket);
+    //        if (state == PlayerState.RoomList)
+    //            _currentState = new RoomListState(_stateManager.World, Player, _socket);
+    //        if (state == PlayerState.Game)
+    //            _currentState = new GameSate(_stateManager.World, Player, _socket);
 
-            _currentState.OnEnter();
+    //        _currentState.OnEnter();
 
-            Send("changeArea", state.ToString());
-        }
+    //        Send("changeArea", state.ToString());
+    //    }
 
-        public void GotoWelcomeState()
-        {
-            Send("changeArea", "welcomeState");
-        }
+    //    public void GotoWelcomeState()
+    //    {
+    //        Send("changeArea", "welcomeState");
+    //    }
 
-        void Send(string type, string message)
-        {
-            var __out = new OutboxMessage("system", type, message);
-            var __outMessage = Newtonsoft.Json.JsonConvert.SerializeObject(__out);
-            _socket.Send(__outMessage);
-        }
-    }
+    //    void Send(string type, string message)
+    //    {
+    //        var __out = new OutboxMessage("system", type, message);
+    //        var __outMessage = Newtonsoft.Json.JsonConvert.SerializeObject(__out);
+    //        _socket.Send(__outMessage);
+    //    }
+    //}
 
     interface IInboxState
     {
@@ -124,118 +124,118 @@ namespace BridgeitServer
         string StateName { get; }
     }
 
-    class RoomListState : IRoomState, IInboxState
-    {
-        private readonly GameWorld _world;
-        private readonly IWebSocketConnection _socket;
+    //class RoomListState : IRoomState, IInboxState
+    //{
+    //    private readonly GameWorld _world;
+    //    private readonly IWebSocketConnection _socket;
 
-        public RoomListState(GameWorld world, IPlayer player, IWebSocketConnection socket)
-        {
-            _world = world;
-            Player = player;
-            _socket = socket;
-        }
+    //    public RoomListState(GameWorld world, IPlayer player, IWebSocketConnection socket)
+    //    {
+    //        _world = world;
+    //        Player = player;
+    //        _socket = socket;
+    //    }
 
-        #region IRoomState
+    //    #region IRoomState
 
-        public IPlayer Player { get; private set; }
-        public void UpdateRoomListAsync(Dictionary<Guid, RoomSettings> settings)
-        {
-            var __dto = new RoomSettingsOutboxMessage(Name, "updateRoomList", settings);
-            var __outMessage = Newtonsoft.Json.JsonConvert.SerializeObject(__dto);
-            _socket.Send(__outMessage);
-        }
+    //    public IPlayer Player { get; private set; }
+    //    public void UpdateRoomListAsync(Dictionary<Guid, RoomSettings> settings)
+    //    {
+    //        var __dto = new RoomSettingsOutboxMessage(Name, "updateRoomList", settings);
+    //        var __outMessage = Newtonsoft.Json.JsonConvert.SerializeObject(__dto);
+    //        _socket.Send(__outMessage);
+    //    }
 
-        #endregion
+    //    #endregion
 
-        #region IInboxState
+    //    #region IInboxState
 
-        public void OnEnter()
-        {
-            _world.EnterRoomsArea(this);
-        }
+    //    public void OnEnter()
+    //    {
+    //        _world.EnterRoomsArea(this);
+    //    }
 
-        public void OnMessage(string message)
-        {
-            var __inbox = Newtonsoft.Json.JsonConvert.DeserializeObject<InboxMessage>(message);
-            switch (__inbox.type)
-            {
-                case "createRoom":
-                    var __dto = Newtonsoft.Json.JsonConvert.DeserializeObject<RoomSettingsDto>(message);
-                    var __settings = RoomSettingsDto.Convert(__dto);
-                    _world.CreateRoom(this, __settings);
-                    break;
+    //    public void OnMessage(string message)
+    //    {
+    //        var __inbox = Newtonsoft.Json.JsonConvert.DeserializeObject<InboxMessage>(message);
+    //        switch (__inbox.type)
+    //        {
+    //            case "createRoom":
+    //                var __dto = Newtonsoft.Json.JsonConvert.DeserializeObject<RoomSettingsDto>(message);
+    //                var __settings = RoomSettingsDto.Convert(__dto);
+    //                _world.CreateRoom(this, __settings);
+    //                break;
 
-                case "removeRoom":
-                    _world.RemoveRoom(this);
-                    break;
+    //            case "removeRoom":
+    //                _world.RemoveRoom(this);
+    //                break;
 
-                case "playGame":
-                    Guid __opponentId;
-                    if (Guid.TryParse(__inbox.value, out __opponentId))
-                        _world.PlayGame(this, __opponentId);
-                    break;
-            }
-        }
+    //            case "playGame":
+    //                Guid __opponentId;
+    //                if (Guid.TryParse(__inbox.value, out __opponentId))
+    //                    _world.PlayGame(this, __opponentId);
+    //                break;
+    //        }
+    //    }
 
-        public void OnLeave()
-        {
-            _world.LeaveRoomArea(this);
-        }
+    //    public void OnLeave()
+    //    {
+    //        _world.LeaveRoomArea(this);
+    //    }
 
-        public string StateName { get { return Name; } }
-        public static readonly string Name = "roomList";
+    //    public string StateName { get { return Name; } }
+    //    public static readonly string Name = "roomList";
 
-        #endregion
-    }
+    //    #endregion
+    //}
 
-    class GameSate : IGameState, IInboxState
-    {
-        private readonly GameWorld _world;
-        private readonly IWebSocketConnection _socket;
+    //class GameSate : IGameState, IInboxState
+    //{
+    //    private readonly GameWorld _world;
+    //    private readonly IWebSocketConnection _socket;
 
-        public GameSate(GameWorld world, IPlayer player, IWebSocketConnection socket)
-        {
-            _world = world;
-            Player = player;
-            _socket = socket;
-        }
+    //    public GameSate(GameWorld world, IPlayer player, IWebSocketConnection socket)
+    //    {
+    //        _world = world;
+    //        Player = player;
+    //        _socket = socket;
+    //    }
 
-        #region IGameState
+    //    #region IGameState
 
-        public IPlayer Player { get; private set; }
+    //    public IPlayer Player { get; private set; }
 
-        public void SendGameState(SimpleGameState state)
-        {
-            throw new NotImplementedException();
-        }
+    //    public void SendGameState(SimpleGameState state)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
 
-        #endregion
+    //    #endregion
 
 
-        #region IGameState
+    //    #region IGameState
 
-        public void OnEnter()
-        {
-            _world.EnterTheGame(this);
-        }
+    //    public void OnEnter()
+    //    {
+    //        _world.EnterTheGame(this);
+    //    }
 
-        public void OnMessage(string message)
-        {
-            throw new NotImplementedException();
-        }
+    //    public void OnMessage(string message)
+    //    {
+    //        throw new NotImplementedException();
+    //    }
 
-        public void OnLeave()
-        {
-            _world.LeaveTheGame(this);
-        }
+    //    public void OnLeave()
+    //    {
+    //        _world.LeaveTheGame(this);
+    //    }
 
-        public string StateName { get { return Name; } }
+    //    public string StateName { get { return Name; } }
 
-        public static readonly string Name = "game";
+    //    public static readonly string Name = "game";
 
-        #endregion
-    }
+    //    #endregion
+    //}
 
     class OutboxMessage
     {
@@ -257,9 +257,9 @@ namespace BridgeitServer
 
     class RoomSettingsOutboxMessage : OutboxMessage
     {
-        public Dictionary<Guid, RoomSettingsDto> settings;
+        public Dictionary<string, RoomSettingsDto> settings;
 
-        public RoomSettingsOutboxMessage(string area, string type, IDictionary<Guid, RoomSettings> rooms)
+        public RoomSettingsOutboxMessage(string area, string type, IDictionary<string, RoomSettings> rooms)
             : base(area, type, null)
         {
             settings = rooms.ToDictionary(x => x.Key, v => RoomSettingsDto.Convert(v.Value));
@@ -299,6 +299,11 @@ namespace BridgeitServer
             this.value = value;
             this.area = area;
         }
+    }
+
+    class RoomSettingsInboxMessage : InboxMessage
+    {
+        public int fieldSize;
     }
 
 

@@ -70,7 +70,7 @@
                     e.preventDefault();
 
                     var __userName = GetById('sendText').value;
-                    Socket.send(JSON.stringify({ type: "login", session: Bag.getItem("session"), value: __userName }));
+                    Socket.send(JSON.stringify({area: "welcome", type: "login", session: Bag.getItem("session"), value: __userName }));
                 });
                 GetById('loginForm_clearError').addEventListener('click', function (e) {
                     e.preventDefault();

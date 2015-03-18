@@ -64,7 +64,7 @@ namespace BridgeitServer
         public void ConfigureConnection(IWebSocketConnection connection)
         {
             var __proxy = new ConnectionProxy(connection, SingleThread);
-            var __highMashine = new HighStateMashine(SharedData, __proxy);
+            var __highMashine = new ConnectionStateMashine(SharedData, __proxy);
             __proxy.Handler = __highMashine;
         }
     }
@@ -88,7 +88,7 @@ namespace BridgeitServer
 
 
     //Убер класс, умеет всё
-    class HighStateMashine : IConnectionHandler
+    class ConnectionStateMashine : IConnectionHandler
     {
         public enum PossibleState { None, Anonim, Connected, Close }
 
@@ -96,7 +96,7 @@ namespace BridgeitServer
 
         public readonly SharedStateData SharedData;
 
-        public HighStateMashine(SharedStateData sharedData, ConnectionProxy proxy)
+        public ConnectionStateMashine(SharedStateData sharedData, ConnectionProxy proxy)
         {
             SharedData = sharedData;
             _proxy = proxy;
@@ -155,27 +155,27 @@ namespace BridgeitServer
             State = PossibleState.Connected;
 
             Guid __id;
-            if (Guid.TryParse(id, out __id) && SharedData.AbandonedLowSm.TryGetValue(__id, out _currentLowMashine))
+            if (Guid.TryParse(id, out __id) && SharedData.AbandonedLowSm.TryGetValue(__id, out _currentSessionMashine))
                 SharedData.AbandonedLowSm.Remove(__id);
             else
             {
-                _currentLowMashine = new LowStateMashine(SharedData);
-                Send(new OutboxMessage("system", "setSessionId", _currentLowMashine.Id.ToString()));
+                _currentSessionMashine = new SessionStateMashine(SharedData);
+                Send(new OutboxMessage("system", "setSessionId", _currentSessionMashine.Id.ToString()));
             }
 
-            _currentLowMashine.OnConnect(Send);
-            Send(new OutboxMessage("system", "changeArea", _currentLowMashine.Area));
+            _currentSessionMashine.OnConnect(Send);
+            Send(new OutboxMessage("system", "changeArea", _currentSessionMashine.Area));
         }
 
         private void LeaveStateConnected()
         {
-            SharedData.AbandonedLowSm.Add(_currentLowMashine.Id, _currentLowMashine);
-            _currentLowMashine.OnDisconnect();
+            SharedData.AbandonedLowSm.Add(_currentSessionMashine.Id, _currentSessionMashine);
+            _currentSessionMashine.OnDisconnect();
         }
 
         #endregion
 
-        private LowStateMashine _currentLowMashine;
+        private SessionStateMashine _currentSessionMashine;
         private ConnectionProxy _proxy;
 
         private void OnMessageAnonim(string message)
@@ -191,11 +191,11 @@ namespace BridgeitServer
         {
             //предварительаня обработка соощений
             var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
-            if (__inbox.session != _currentLowMashine.Id)
+            if (__inbox.session != _currentSessionMashine.Id)
                 return; //TODO может перелогиниться?
 
             if (__inbox.area != "system")
-                _currentLowMashine.OnMessage(message);
+                _currentSessionMashine.OnMessage(message);
 
             if (__inbox.type == "logout")
             {
@@ -215,7 +215,7 @@ namespace BridgeitServer
         }
     }
 
-    class LowStateMashine
+    class SessionStateMashine
     {
         public readonly Guid Id = Guid.NewGuid();
         public string Area { get; private set; }
@@ -223,7 +223,7 @@ namespace BridgeitServer
         private Func<OutboxMessage, bool> _sendHandler;
 
 
-        public LowStateMashine(SharedStateData data)
+        public SessionStateMashine(SharedStateData data)
         {
             SharedData = data;
             Area = "welcome";
@@ -248,8 +248,8 @@ namespace BridgeitServer
 
     class SharedStateData
     {
-        public readonly Dictionary<Guid, LowStateMashine> AbandonedLowSm = new Dictionary<Guid, LowStateMashine>();
-        public readonly List<HighStateMashine> LiveConnection = new List<HighStateMashine>();
+        public readonly Dictionary<Guid, SessionStateMashine> AbandonedLowSm = new Dictionary<Guid, SessionStateMashine>();
+        public readonly List<ConnectionStateMashine> LiveConnection = new List<ConnectionStateMashine>();
     }
 
 

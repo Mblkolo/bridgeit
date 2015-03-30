@@ -12,6 +12,7 @@
 
         var start = function () {
             var Log = GetById('LogArea');
+            var playerId;
 
             var Socket = function () {
                 var __instance = {};
@@ -84,6 +85,9 @@
                         GetById('loginForm_error').className = '';
                         GetById('loginForm').className = '';
                     }
+                    if(data.type == "setPlayerId") {
+                        playerId = data.value;
+                    }
                 }
                 function leave() {
                     GetById('loginForm').className = '';
@@ -104,17 +108,8 @@
 
             var RoomsState = function () {
                 function route(data) {
-                    if(data.type == 'roomsList') {
-                        //TODO отработать получение списка комнат
-                        //Гарантируется что все измения придут через updateRoomsList
-                    }
-
-                    if (data.type == 'updateRoomsList') {
-                        //TODO отработать обновление списка комнат
-                        //Если комната создана этим же игроком, то она в общем списке не отображется а висит сверхку
-                        //Главная особенность в том, что её можно удалить, удалять чужие комнаты нельзя
-                        //Можно пересоздать свою, тогда она заменится
-                        //Нельзя присоедениться к себе :)
+                    if (data.type == 'updateRoomList') {
+                        //TODO отработать
                     }
                 }
                 function leave() {
@@ -182,6 +177,13 @@
         };
         window.onload = start;
     </script>
+    <script type="text/template" id="room_item_template">
+        <span class="name">Имя</span>
+        <input type="submit" value="играть">
+        <span class="field_size">Размер поля</span>
+        <span class="time">Время на ход</span>
+        <span class="more_time">Дополнительное время</span>
+    </script>
 </head>
 <body>
     <div id="defaultText">
@@ -206,8 +208,12 @@
     <form id="exitForm">
         <input id="exitButton" type="submit" value="выйти" />
     </form>
-    <div id="roomArea" class="hide">Видешь список игр? А он есть</div>
+    <div id="roomArea" class="hide">
+        <input type="submit" value="Создать игру">
+    </div>
 
     <pre id="LogArea"></pre>
 </body>
+
+
 </html>

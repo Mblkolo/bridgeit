@@ -87,7 +87,7 @@ namespace BridgeitServer
     }
 
 
-    //Убер класс, умеет всё
+     //Убер класс, умеет всё
     class ConnectionStateMashine : IConnectionHandler
     {
         public enum PossibleState { None, Anonim, Connected, Close }
@@ -218,6 +218,12 @@ namespace BridgeitServer
 
     class SessionStateMashine
     {
+        private static int LatestSessionId;
+        private static int GenerateSessionId()
+        {
+            return ++LatestSessionId;
+        }
+
         public readonly Guid Id = Guid.NewGuid();
         public string Area { get; private set; }
         public readonly SharedStateData SharedData;
@@ -257,6 +263,7 @@ namespace BridgeitServer
                     else
                     {
                         _player = new Player(inbox.value);
+                        Send("setPlayerId", GenerateSessionId().ToString());
                         AreaRooms();
                     }
                 }

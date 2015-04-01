@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html>
+<html ng-app="bridgeitApp">
 <head>
     <title>websocket client</title>
     <link href="style.css" rel="stylesheet" />
@@ -67,17 +67,17 @@
             }();
 
             var WelcomeState = function () {
-                GetById('loginForm').addEventListener('submit', function (e) {
-                    e.preventDefault();
+                //GetById('loginForm').addEventListener('submit', function (e) {
+                //    e.preventDefault();
 
-                    var __userName = GetById('sendText').value;
-                    Socket.send(JSON.stringify({area: "welcome", type: "login", session: Bag.getItem("session"), value: __userName }));
-                });
-                GetById('loginForm_clearError').addEventListener('click', function (e) {
-                    e.preventDefault();
-                    GetById('loginForm_error').className = 'hide';
-                    GetById('loginForm').className = 'show';
-                });
+                //    var __userName = GetById('sendText').value;
+                //    Socket.send(JSON.stringify({area: "welcome", type: "login", session: Bag.getItem("session"), value: __userName }));
+                //});
+                //GetById('loginForm_clearError').addEventListener('click', function (e) {
+                //    e.preventDefault();
+                //    GetById('loginForm_error').className = 'hide';
+                //    GetById('loginForm').className = 'show';
+                //});
 
                 function route(data) {
                     if (data.type == "showError") {
@@ -186,34 +186,58 @@
     </script>
 </head>
 <body>
-    <div id="defaultText">
-        <h3>Великое ничто!</h3>
-        <div>
-            Всё начинается с великого ничто, клиент обращается к серверу и пытается понять где он.
-            <br />
-            Для этого нужна сессия, если сессии нет, то всё понятно, нужно аутентифицироваться, но если она есть и протухла?
-            <br />
-            Да не важно, в любом случае первым запросом идёт присоединение к серверу и передача идентификатора сессии. И получение его же.
+    <div ng-controller="areaController" ng-switch="model.area">
+        <div ng-switch-default>
+            <h3>Великое ничто!</h3>
+            <div>
+                Всё начинается с великого ничто, клиент обращается к серверу и пытается понять где он.
+                <br />
+                Для этого нужна сессия, если сессии нет, то всё понятно, нужно аутентифицироваться, но если она есть и протухла?
+                <br />
+                Да не важно, в любом случае первым запросом идёт присоединение к серверу и передача идентификатора сессии. И получение его же.
+            </div>
         </div>
-    </div>
-    <form id="loginForm" action="Index.html">
-        <div>Ты кто такой?</div>
-        <input id="sendText" type="text" />
-        <input type="submit" value="это я">
-    </form>
-    <div id="loginForm_error" class="hide">
-        <span id="loginForm_errorMessage"></span>
-        <button id="loginForm_clearError">я исправлюсь...</button>
-    </div>
-    <form id="exitForm">
-        <input id="exitButton" type="submit" value="выйти" />
-    </form>
-    <div id="roomArea" class="hide">
-        <input type="submit" value="Создать игру">
+        <div ng-switch-when="welcome" ng-controller="welcomeAreaController">
+            <div ng-show="!model.errorMessage">
+                <div>Ты кто такой?</div>
+                <input type="text" ng-model="model.userName" />
+                <input type="submit" value="это я" ng-click="model.onLogin()">
+            </div>
+            <div ng-show="model.errorMessage">
+                <span>{{model.errorMessage}}</span>
+                <button ng-click="model.onCloseErrorMessage()">я исправлюсь...</button>
+            </div>
+        </div>
+
+
+        <div id="roomArea">
+            <input type="submit" value="Создать игру">
+        </div>
     </div>
 
     <pre id="LogArea"></pre>
+
+    <script src="Scripts/angular.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        var __app = angular.module('bridgeitApp', []);
+        __app.controller('areaController', ['$scope', function ($scope) {
+            $scope.model = {area:"welcome"};
+        }]);
+        __app.controller('welcomeAreaController', ['$scope', function ($scope) {
+            var __model = {
+                errorMessage: "ты плохой"
+
+            };
+            __model.onLogin = function () {
+                //TODO логин
+            };
+            __model.onCloseErrorMessage = function () {
+                __model.errorMessage = "";
+            };
+
+            $scope.model = __model;
+        }]);
+
+    </script>
 </body>
-
-
 </html>

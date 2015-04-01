@@ -51,6 +51,7 @@
     <Content Include="Scripts\angular-mocks.js" />
     <Content Include="Scripts\angular.js" />
     <Content Include="Scripts\angular.min.js" />
+    <Content Include="style.css" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

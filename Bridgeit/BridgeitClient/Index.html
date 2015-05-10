@@ -4,185 +4,7 @@
     <title>websocket client</title>
     <link href="style.css" rel="stylesheet" />
     <script type="text/javascript">
-
-        var WsImpl = window.WebSocket || window.MozWebSocket;
-        var Document = document;
-        var GetById = function (id) { return Document.getElementById(id); };
         var Bag = localStorage;
-
-        var start = function () {
-            var Log = GetById('LogArea');
-            var playerId;
-
-            var Socket = function () {
-                var __instance = {};
-                var __ws = null;
-
-                function send(message) {
-                    if (__ws != null)
-                        __ws.send(message);
-                }
-
-                function open() {
-                    __ws = new WsImpl('ws://localhost:8181/');
-                    Log.innerHTML += '.. connection started<br/>';
-                    __ws.onopen = function () {
-                        Log.innerHTML += '.. connection open<br/>';
-                        __ws.send(JSON.stringify({area: "system", type: "join", value: Bag.getItem('session') }));
-                    };
-                    __ws.onclose = function () { Log.innerHTML += '.. connection closed<br/>'; }; //И тут тоже больше ничего полезного
-                    __ws.onmessage = function (evt) {
-                        Log.innerHTML += evt.data + '<br/>';
-                        if (__instance.onmessage)
-                            __instance.onmessage(evt.data);
-
-                    };
-                }
-
-                __instance.send = send;
-                __instance.open = open;
-                __instance.onmessage = null;
-
-                return __instance;
-            }();
-
-            var DefaultState = function () {
-                function route(data) {
-
-                }
-                function leave() {
-                    GetById('defaultText').className = 'hide';
-                }
-
-                function enter() {
-                    GetById('defaultText').className = '';
-                }
-
-                return {
-                    route: route,
-                    leave: leave,
-                    enter: enter,
-                    area: "default"
-                };
-            }();
-
-            var WelcomeState = function () {
-                //GetById('loginForm').addEventListener('submit', function (e) {
-                //    e.preventDefault();
-
-                //    var __userName = GetById('sendText').value;
-                //    Socket.send(JSON.stringify({area: "welcome", type: "login", session: Bag.getItem("session"), value: __userName }));
-                //});
-                //GetById('loginForm_clearError').addEventListener('click', function (e) {
-                //    e.preventDefault();
-                //    GetById('loginForm_error').className = 'hide';
-                //    GetById('loginForm').className = 'show';
-                //});
-
-                function route(data) {
-                    if (data.type == "showError") {
-                        GetById('loginForm_errorMessage').textContent = data.value;
-                        GetById('loginForm_error').className = '';
-                        GetById('loginForm').className = '';
-                    }
-                    if(data.type == "setPlayerId") {
-                        playerId = data.value;
-                    }
-                }
-                function leave() {
-                    GetById('loginForm').className = '';
-                }
-
-                function enter() {
-                    GetById('loginForm').className = 'show';
-                }
-
-                return {
-                    route: route,
-                    leave: leave,
-                    enter: enter,
-                    area: "welcome"
-                };
-            }();
-            
-
-            var RoomsState = function () {
-                function route(data) {
-                    if (data.type == 'updateRoomList') {
-                        //TODO отработать
-                    }
-                }
-                function leave() {
-                    GetById('roomArea').className = 'hide';
-                }
-
-                function enter() {
-                    GetById('roomArea').className = '';
-                    //Нам нужен список чатов
-                    Socket.send(JSON.stringify({ type: "getRooms", session: Bag.getItem("session")}));
-                }
-
-                return {
-                    route: route,
-                    leave: leave,
-                    enter: enter,
-                    area: "rooms"
-                };
-            }();
-
-            var Br = function () {
-                //Текущая локация, сообщения из других локаций игнорируются
-                var __currentState = DefaultState;
-
-                var __states = {};
-                __states[DefaultState.area] = DefaultState;
-                __states[WelcomeState.area] = WelcomeState;
-                __states[RoomsState.area] = RoomsState;
-
-                function systemRoute(data) {
-                    if (data.type == "setSessionId")
-                        Bag.setItem("session", data.value);
-
-                    if (data.type == "failJoin") {
-                        __currentState.leave();
-                        __currentState = __states[WelcomeState.area];
-                        __currentState.enter();
-                    }
-
-                    if (data.type == "changeArea") {
-                        __currentState.leave();
-                        __currentState = __states[data.value];
-                        __currentState.enter();
-                    }
-                }
-
-                function route(message) {
-                    var __data = JSON.parse(message);
-                    if (__data.area == 'system')
-                        systemRoute(__data);
-                    else if (__data.area == __currentState.area)
-                        __currentState.route(__data);
-                };
-
-                //Запускается после обновления страницы, ну или когда мы в панике
-                function start() {
-                    Socket.onmessage = route;
-                    Socket.open();
-                }
-
-                return { start: start };
-            }();
-
-            Br.start();
-        };
-        window.onload = start;
-    </script>
-    <script type="text/template" id="room_item_template">
-        <span class="name">Имя</span>
-        <input type="submit" value="играть">
-        <span class="field_size">Размер поля</span>
-        <span class="time">Время на ход</span>
-        <span class="more_time">Дополнительное время</span>
     </script>
 </head>
 <body>
@@ -197,6 +19,7 @@
                 Да не важно, в любом случае первым запросом идёт присоединение к серверу и передача идентификатора сессии. И получение его же.
             </div>
         </div>
+
         <div ng-switch-when="welcome" ng-controller="welcomeAreaController">
             <div ng-show="!model.errorMessage">
                 <div>Ты кто такой?</div>
@@ -209,21 +32,68 @@
             </div>
         </div>
 
-
-        <div id="roomArea">
+        <div ng-switch-when="rooms">
             <input type="submit" value="Создать игру">
         </div>
+        <button ng-click="model.area = 'welcome'" >ok da?</button>
     </div>
 
-    <pre id="LogArea"></pre>
 
     <script src="Scripts/angular.js" type="text/javascript"></script>
+
     <script type="text/javascript">
         var __app = angular.module('bridgeitApp', []);
-        __app.controller('areaController', ['$scope', function ($scope) {
-            $scope.model = {area:"welcome"};
+
+        __app.controller('areaController', ['$scope', 'socketConnection', 'welcomeStateService', 'defaultStateService',
+                function ($scope, socketConnection, welcomeStateService, defaultStateService) {
+
+            console.log('areaController created');
+
+            var __currentState = welcomeStateService;
+
+            //Текущая локация, сообщения из других локаций игнорируются
+            var __currentState = defaultStateService;
+
+            var __states = {};
+            __states[defaultStateService.area] = defaultStateService;
+            __states[welcomeStateService.area] = welcomeStateService;
+            //__states[RoomsState.area] = RoomsState;
+
+            var systemRoute = function (data) {
+                if (data.type == "setSessionId")
+                    Bag.setItem("session", data.value);
+
+                if (data.type == "failJoin") {
+                    __currentState.leave();
+                    __currentState = __states[welcomeStateService.area];
+                    __currentState.enter();
+                }
+
+                if (data.type == "changeArea") {
+                    __currentState.leave();
+                    __currentState = __states[data.value];
+                    $scope.model.area = __currentState.area;
+                    __currentState.enter();
+                }
+            }
+
+            socketConnection.handler = function(data)
+            {
+                if (data.area === 'system')
+                    systemRoute(data);
+                else if (data.area === __currentState.area)
+                    __currentState.route(data);
+            }
+
+
+            $scope.model = { area: __currentState.area };
+
+            socketConnection.open();
         }]);
+
         __app.controller('welcomeAreaController', ['$scope', function ($scope) {
+            console.log('welcomeAreaController created');
+
             var __model = {
                 errorMessage: "ты плохой"
 
@@ -237,6 +107,64 @@
 
             $scope.model = __model;
         }]);
+
+        __app.service('socketConnection', [ '$rootScope', function ( $rootScope) {
+            console.log('socketConnection created');
+
+            that = this;
+
+            this.handler = null;
+
+            this.send = function (data) {
+                if (__ws != null)
+                    __ws.send(JSON.stringify(data));
+            }
+
+            this.onMessage = function (evt) {
+                console.log( evt.data );
+                if (that.handler !== null) {
+                    $rootScope.$apply(function(){that.handler(JSON.parse(evt.data))});
+                }
+            };
+
+            this.open = function() {
+                __ws = new WebSocket('ws://localhost:8181/');
+                console.log('.. connection started');
+
+                __ws.onopen = function () {
+                    console.log('.. connection open');
+                    that.send({ area: "system", type: "join", value: Bag.getItem('session') });
+                };
+                __ws.onclose = function () { console.log('.. connection closed'); }; //И тут тоже больше ничего полезного
+                __ws.onmessage = that.onMessage;
+            }
+
+
+        }]);
+
+        __app.service('welcomeStateService', ['socketConnection', function (socketConnection) {
+            console.log('welcomeStateService created');
+            
+            this.area = 'welcome';
+            this.route = function (data) {
+                console.log(data);
+            };
+            this.leave = function () { };
+            this.enter = function () { };
+        }]);
+
+        __app.service('defaultStateService', ['socketConnection', function (socketConnection) {
+            console.log('defaultStateService created');
+
+            this.area = 'default';
+            this.route = function (data) {
+                console.log(data);
+            };
+            this.leave = function () { };
+            this.enter = function () { };
+        }]);
+
+
 
     </script>
 </body>

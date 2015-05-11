@@ -32,10 +32,54 @@
             </div>
         </div>
 
-        <div ng-switch-when="rooms">
-            <input type="submit" value="Создать игру">
+        <div ng-switch-when="rooms" ng-controller="roomsAreaController">
+            <div class="window" ng-show="mode == 'roomList'">
+                <form ng-show="model.isPossibleCreate" id="new_game">
+                    <button ng-click="addNew()">Создать</button>
+                </form>
+                <form ng-show="withMyGame" id="player1" class="plate">
+                    <span class="name">{{myGame.name}}</span>
+                    <input type="submit" value="удалить" ng-click="removeMyGame()" />
+                    <span class="field_size">{{myGame.fieldSize}}x{{myGame.fieldSize}}</span>
+                    <span class="time">{{myGame.time}}с</span>
+                    <span class="more_time">{{myGame.moreTime}}м</span>
+                </form>
+                <form ng-repeat="room in model.rooms" id="player1" class="plate">
+                    <span class="name">{{room.name}}</span>
+
+                    <span class="field_size">{{room.fieldSize}}x{{room.fieldSize}}</span>
+                    <span class="time">{{room.time}}с</span>
+                    <span class="more_time">{{room.moreTime}}м</span>
+                    <a href="#"> играть</a>
+
+                </form>
+            </div>
+            <div class="window game_creation" ng-show="mode == 'createRoom'">
+                <form id="player1" class="plate">
+                    <span class="name">Моя игра</span>
+                    <span>Размер поля</span>
+                    <select ng-model="myGame.fieldSize">
+                        <option value="7">7х7</option>
+                        <option value="10">10х10</option>
+                    </select>
+                    <span>Время на ход</span>
+                    <select ng-model="myGame.time">
+                        <option value="15">15с</option>
+                        <option value="20">20с</option>
+                    </select>
+                    <span>Дополнительное время</span>
+                    <select ng-model="myGame.moreTime">
+                        <option value="3">3м</option>
+                        <option value="5"> 5м</option>
+                    </select>
+
+                    <span></span>
+                    <button ng-click="createNewGame()">Cоздать игру</button>
+                    <button ng-click="leaveNewGame()">Не создавать</button>
+                </form>
+            </div>
         </div>
-        <button ng-click="model.area = 'welcome'" >ok da?</button>
+        <!--<button ng-click="model.area = 'welcome'" >ok da?</button>-->
     </div>
 
 
@@ -44,8 +88,8 @@
     <script type="text/javascript">
         var __app = angular.module('bridgeitApp', []);
 
-        __app.controller('areaController', ['$scope', 'socketConnection', 'welcomeStateService', 'defaultStateService',
-                function ($scope, socketConnection, welcomeStateService, defaultStateService) {
+        __app.controller('areaController', ['$scope', 'socketConnection', 'welcomeStateService', 'defaultStateService', 'roomsStateService',
+                function ($scope, socketConnection, welcomeStateService, defaultStateService, roomsStateService) {
 
             console.log('areaController created');
 
@@ -57,11 +101,14 @@
             var __states = {};
             __states[defaultStateService.area] = defaultStateService;
             __states[welcomeStateService.area] = welcomeStateService;
-            //__states[RoomsState.area] = RoomsState;
+            __states[roomsStateService.area] = roomsStateService;
 
             var systemRoute = function (data) {
                 if (data.type == "setSessionId")
-                    Bag.setItem("session", data.value);
+                    Bag.setItem("sessionId", data.value);
+
+                if (data.type === 'setPlayerId') 
+                    Bag.setItem('playerId', data.value);
 
                 if (data.type == "failJoin") {
                     __currentState.leave();
@@ -88,27 +135,59 @@
 
             $scope.model = { area: __currentState.area };
 
-            socketConnection.open();
+            socketConnection.open({ area: "system", type: "join", value: Bag.getItem('session') });
         }]);
 
-        __app.controller('welcomeAreaController', ['$scope', function ($scope) {
+        __app.controller('welcomeAreaController', ['$scope', 'socketConnection', function ($scope, socketConnection) {
             console.log('welcomeAreaController created');
 
             var __model = {
-                errorMessage: "ты плохой"
-
+                errorMessage: null,
+                userName: null
             };
             __model.onLogin = function () {
-                //TODO логин
+                socketConnection.send({ area: "welcome", type: "login", sessionId: Bag.getItem("sessionId"), value: __model.userName });
             };
             __model.onCloseErrorMessage = function () {
-                __model.errorMessage = "";
+                __model.errorMessage = null;
             };
 
             $scope.model = __model;
         }]);
 
-        __app.service('socketConnection', [ '$rootScope', function ( $rootScope) {
+        __app.controller('roomsAreaController', ['$scope', 'roomsStateService', function ($scope, roomsStateService) {
+            console.log('roomsAreaController created');
+
+            $scope.model = roomsStateService.model;
+
+            $scope.mode = 'roomList';
+            $scope.withMyGame = false;
+
+            $scope.myGame = {
+                name: "Я ^__^",
+                fieldSize: 10,
+                time: 15,
+                moreTime: 3
+            };
+
+            $scope.addNew = function () {
+                $scope.mode = 'createRoom';
+            };
+            $scope.createNewGame = function () {
+                roomsStateService.createNewGame();
+                $scope.mode = 'roomList';
+                $scope.withMyGame = true;
+            };
+            $scope.leaveNewGame = function () {
+                $scope.mode = 'roomList';
+                $scope.withMyGame = false;
+            };
+            $scope.removeMyGame = function () {
+                $scope.withMyGame = false;
+            };
+        }]);
+
+        __app.service('socketConnection', ['$rootScope', function ($rootScope) {
             console.log('socketConnection created');
 
             that = this;
@@ -127,13 +206,13 @@
                 }
             };
 
-            this.open = function() {
+            this.open = function(data) {
                 __ws = new WebSocket('ws://localhost:8181/');
                 console.log('.. connection started');
 
                 __ws.onopen = function () {
                     console.log('.. connection open');
-                    that.send({ area: "system", type: "join", value: Bag.getItem('session') });
+                    that.send(data);
                 };
                 __ws.onclose = function () { console.log('.. connection closed'); }; //И тут тоже больше ничего полезного
                 __ws.onmessage = that.onMessage;
@@ -159,6 +238,35 @@
             this.area = 'default';
             this.route = function (data) {
                 console.log(data);
+            };
+            this.leave = function () { };
+            this.enter = function () { };
+        }]);
+
+
+        __app.service('roomsStateService', ['socketConnection', function (socketConnection) {
+            console.log('roomsStateService created');
+
+            var me = this;
+            this.area = 'rooms';
+            this.model = {};
+            this.model.rooms = {};
+            this.model.isPossibleCreate = true;
+            this.model.createNewGame()
+            {
+                me.model.isPossibleCreate = false; 
+                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'createRoom', fieldSize: $scope.myGame.fieldSize });
+            }
+
+
+            this.route = function (data) {
+                if(data.type='updateRoomList')
+                {
+                    var settings = data.settings;
+                    for (var i = 0; i < settings.length; ++i)
+                        if (settings[i].value != null)
+                            ;
+                }
             };
             this.leave = function () { };
             this.enter = function () { };

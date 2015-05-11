@@ -257,9 +257,9 @@ namespace BridgeitServer
 
     class RoomSettingsOutboxMessage : OutboxMessage
     {
-        public Dictionary<string, RoomSettingsDto> settings;
+        public Dictionary<int, RoomSettingsDto> settings;
 
-        public RoomSettingsOutboxMessage(string area, string type, IDictionary<string, RoomSettings> rooms)
+        public RoomSettingsOutboxMessage(string area, string type, IDictionary<int, RoomSettings> rooms)
             : base(area, type, null)
         {
             settings = rooms.ToDictionary(x => x.Key, v => RoomSettingsDto.Convert(v.Value));
@@ -268,22 +268,24 @@ namespace BridgeitServer
 
     class RoomSettingsDto
     {
-        public string text;
+        public string Name;
+        public int Id;
+        public int fieldSize;
 
         public static RoomSettingsDto Convert(RoomSettings settings)
         {
-            return new RoomSettingsDto { text = settings.Text };
+            return new RoomSettingsDto { Name = settings.Name, Id = settings.Id, fieldSize = settings.Size };
         }
 
         public static RoomSettings Convert(RoomSettingsDto settings)
         {
-            return new RoomSettings { Text = settings.text };
+            return new RoomSettings { Name = settings.Name, Id = settings.Id, Size = settings.fieldSize };
         }
     }
 
     class InboxMessage
     {
-        public Guid session;
+        public Guid sessionId;
         public string area;
         public string type;
         public string value;
@@ -294,7 +296,7 @@ namespace BridgeitServer
 
         public InboxMessage(Guid session, string type, string value, string area)
         {
-            this.session = session;
+            this.sessionId = session;
             this.type = type;
             this.value = value;
             this.area = area;

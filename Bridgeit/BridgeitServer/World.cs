@@ -196,9 +196,11 @@ namespace BridgeitServer
     class Player
     {
         public readonly string Name;
-        public Player(string name)
+        public readonly int Id;
+        public Player(string name, int id)
         {
             Name = name;
+            Id = id;
         }
     }
 
@@ -243,7 +245,9 @@ namespace BridgeitServer
 
     class RoomSettings
     {
-        public string Text;
+        public int Id;
+        public string Name;
+        //public string Text;
         public int Size;
     }
 

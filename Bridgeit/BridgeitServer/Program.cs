@@ -191,7 +191,7 @@ namespace BridgeitServer
         {
             //предварительаня обработка соощений
             var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
-            if (__inbox.session != _currentSessionMashine.Id)
+            if (__inbox.sessionId != _currentSessionMashine.Id)
                 return; //TODO может перелогиниться?
 
             if (__inbox.area != "system")
@@ -243,7 +243,7 @@ namespace BridgeitServer
                 return;
 
             var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
-            if (__inbox.area != Area || __inbox.session != Id)
+            if (__inbox.area != Area || __inbox.sessionId != Id)
                 return;
 
             if (Area == "welcome")
@@ -262,8 +262,8 @@ namespace BridgeitServer
                         Send("showError", "Имя занято, выбери другое");
                     else
                     {
-                        _player = new Player(inbox.value);
-                        Send("setPlayerId", GenerateSessionId().ToString());
+                        _player = new Player(inbox.value, GenerateSessionId());
+                        Send("setPlayerId", _player.Id.ToString());
                         AreaRooms();
                     }
                 }
@@ -275,24 +275,24 @@ namespace BridgeitServer
             if (inbox.type == "createRoom")
             {
                 var __inbox = JsonConvert.DeserializeObject<RoomSettingsInboxMessage>(message);
-                if (__inbox.fieldSize < 3 || __inbox.fieldSize < 10)
+                if (__inbox.fieldSize < 3 || __inbox.fieldSize > 10)
                     return; //TODO выругаться
 
-                if (!SharedData.RoomsSettings.ContainsKey(_player.Name))
+                if (SharedData.RoomsSettings.Values.Any(x => x.Name == _player.Name))
                     return;
 
-                var __newSettings = new RoomSettings { Size = __inbox.fieldSize };
-                SharedData.RoomsSettings.Add(_player.Name, __newSettings);
+                var __newSettings = new RoomSettings { Size = __inbox.fieldSize, Name = _player.Name, Id = _player.Id };
+                SharedData.RoomsSettings.Add(_player.Id, __newSettings);
 
-                var __updateData = new Dictionary<string, RoomSettings> { { _player.Name, __newSettings } };
+                var __updateData = new Dictionary<int, RoomSettings> { { _player.Id, __newSettings } };
                 foreach (var __listener in SharedData.RoomsListeners.Values)
                     __listener.UpdateRoomList(__updateData);
             }
             else if (inbox.type == "removeRoom")
             {
-                if (SharedData.RoomsSettings.Remove(_player.Name))
+                if (SharedData.RoomsSettings.Remove(_player.Id))
                 {
-                    var __updateData = new Dictionary<string, RoomSettings> { { _player.Name, null } };
+                    var __updateData = new Dictionary<int, RoomSettings> { { _player.Id, null } };
                     foreach (var __listener in SharedData.RoomsListeners.Values)
                         __listener.UpdateRoomList(__updateData);
                 }
@@ -328,7 +328,7 @@ namespace BridgeitServer
 
             //Дейсвтия по входу в комнату
             var __roomListener = new RoomsAreaListener(this);
-            SharedData.RoomsListeners.Add(_player.Name, __roomListener);
+            SharedData.RoomsListeners.Add(_player.Id, __roomListener);
 
             Send(new OutboxMessage("system", "changeArea", Area));
             __roomListener.UpdateRoomList(SharedData.RoomsSettings);
@@ -343,7 +343,7 @@ namespace BridgeitServer
                 _sessionFsm = sessionFsm;
             }
 
-            public void UpdateRoomList(Dictionary<string, RoomSettings> roomsSettings)
+            public void UpdateRoomList(Dictionary<int, RoomSettings> roomsSettings)
             {
                 var __outbox = new RoomSettingsOutboxMessage("rooms", "updateRoomList", roomsSettings);
                 _sessionFsm.Send(__outbox);
@@ -358,13 +358,13 @@ namespace BridgeitServer
         public readonly List<ConnectionStateMashine> LiveConnection = new List<ConnectionStateMashine>();
         public readonly Dictionary<string, Player> Players = new Dictionary<string, Player>();
 
-        public readonly Dictionary<string, RoomSettings> RoomsSettings = new Dictionary<string, RoomSettings>();
-        public readonly Dictionary<string, IRoomsAreaListener> RoomsListeners = new Dictionary<string, IRoomsAreaListener>();
+        public readonly Dictionary<int, RoomSettings> RoomsSettings = new Dictionary<int, RoomSettings>();
+        public readonly Dictionary<int, IRoomsAreaListener> RoomsListeners = new Dictionary<int, IRoomsAreaListener>();
     }
 
     interface IRoomsAreaListener
     {
-        void UpdateRoomList(Dictionary<string, RoomSettings> roomsSettings);
+        void UpdateRoomList(Dictionary<int, RoomSettings> roomsSettings);
     }
 
     //Концепция такая

@@ -33,42 +33,40 @@
         </div>
 
         <div ng-switch-when="rooms" ng-controller="roomsAreaController">
-            <div class="window" ng-show="mode == 'roomList'">
+            <div class="window" ng-show="viewModel.mode == 'roomList'">
                 <form ng-show="model.isPossibleCreate" id="new_game">
-                    <button ng-click="addNew()">Создать</button>
+                    <button ng-click="showCreateRoom()">Создать</button>
                 </form>
-                <form ng-show="withMyGame" id="player1" class="plate">
+<!--                <form ng-show="withMyGame" class="plate">
                     <span class="name">{{myGame.name}}</span>
                     <input type="submit" value="удалить" ng-click="removeMyGame()" />
                     <span class="field_size">{{myGame.fieldSize}}x{{myGame.fieldSize}}</span>
                     <span class="time">{{myGame.time}}с</span>
                     <span class="more_time">{{myGame.moreTime}}м</span>
-                </form>
-                <form ng-repeat="room in model.rooms" id="player1" class="plate">
+                </form>-->
+                <form ng-repeat="room in model.rooms | orderBy:'-isMy':'playeerId'" class="plate">
                     <span class="name">{{room.name}}</span>
-
                     <span class="field_size">{{room.fieldSize}}x{{room.fieldSize}}</span>
                     <span class="time">{{room.time}}с</span>
                     <span class="more_time">{{room.moreTime}}м</span>
-                    <a href="#"> играть</a>
-
+                    <a href="#">Играть</a>
                 </form>
             </div>
-            <div class="window game_creation" ng-show="mode == 'createRoom'">
-                <form id="player1" class="plate">
+            <div class="window game_creation" ng-show="viewModel.mode == 'createRoom'">
+                <form class="plate">
                     <span class="name">Моя игра</span>
                     <span>Размер поля</span>
-                    <select ng-model="myGame.fieldSize">
+                    <select ng-model="viewModel.roomSettings.fieldSize">
                         <option value="7">7х7</option>
                         <option value="10">10х10</option>
                     </select>
                     <span>Время на ход</span>
-                    <select ng-model="myGame.time">
+                    <select ng-model="viewModel.roomSettings.time">
                         <option value="15">15с</option>
                         <option value="20">20с</option>
                     </select>
                     <span>Дополнительное время</span>
-                    <select ng-model="myGame.moreTime">
+                    <select ng-model="viewModel.roomSettings.moreTime">
                         <option value="3">3м</option>
                         <option value="5"> 5м</option>
                     </select>
@@ -135,7 +133,7 @@
 
             $scope.model = { area: __currentState.area };
 
-            socketConnection.open({ area: "system", type: "join", value: Bag.getItem('session') });
+            socketConnection.open({ area: "system", type: "join", value: Bag.getItem('sessionId') });
         }]);
 
         __app.controller('welcomeAreaController', ['$scope', 'socketConnection', function ($scope, socketConnection) {
@@ -160,30 +158,26 @@
 
             $scope.model = roomsStateService.model;
 
-            $scope.mode = 'roomList';
-            $scope.withMyGame = false;
-
-            $scope.myGame = {
-                name: "Я ^__^",
+            $scope.viewModel= {};
+            $scope.viewModel.mode = 'roomList';
+            $scope.viewModel.roomSettings = {
                 fieldSize: 10,
                 time: 15,
                 moreTime: 3
             };
 
-            $scope.addNew = function () {
-                $scope.mode = 'createRoom';
+            $scope.showCreateRoom = function () {
+                $scope.viewModel.mode = 'createRoom';
             };
             $scope.createNewGame = function () {
-                roomsStateService.createNewGame();
-                $scope.mode = 'roomList';
-                $scope.withMyGame = true;
+                $scope.viewModel.mode = 'roomList';
+                $scope.model.createNewGame($scope.viewModel.roomSettings);
             };
             $scope.leaveNewGame = function () {
-                $scope.mode = 'roomList';
-                $scope.withMyGame = false;
+                $scope.viewModel.mode = 'roomList';
             };
             $scope.removeMyGame = function () {
-                $scope.withMyGame = false;
+                $scope.model.removeGame();
             };
         }]);
 
@@ -252,12 +246,13 @@
             this.model = {};
             this.model.rooms = {};
             this.model.isPossibleCreate = true;
-            this.model.createNewGame()
-            {
+            this.model.createNewGame = function (roomSettings) {
                 me.model.isPossibleCreate = false; 
-                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'createRoom', fieldSize: $scope.myGame.fieldSize });
+                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'createRoom', fieldSize: roomSettings.fieldSize });
             }
-
+            this.model.removeMyGame = function () {
+                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'removeRoom', value: Bag.getItem('palyerId') });
+            }
 
             this.route = function (data) {
                 if(data.type='updateRoomList')

@@ -44,7 +44,7 @@
                     <span class="time">{{myGame.time}}с</span>
                     <span class="more_time">{{myGame.moreTime}}м</span>
                 </form>-->
-                <form ng-repeat="room in model.rooms | orderBy:'-isMy':'playeerId'" class="plate">
+                <form ng-repeat="room in model.rooms" class="plate">
                     <span class="name">{{room.name}}</span>
                     <span class="field_size">{{room.fieldSize}}x{{room.fieldSize}}</span>
                     <span class="time">{{room.time}}с</span>
@@ -91,8 +91,6 @@
 
             console.log('areaController created');
 
-            var __currentState = welcomeStateService;
-
             //Текущая локация, сообщения из других локаций игнорируются
             var __currentState = defaultStateService;
 
@@ -102,19 +100,19 @@
             __states[roomsStateService.area] = roomsStateService;
 
             var systemRoute = function (data) {
-                if (data.type == "setSessionId")
+                if (data.type === "setSessionId")
                     Bag.setItem("sessionId", data.value);
 
                 if (data.type === 'setPlayerId') 
                     Bag.setItem('playerId', data.value);
 
-                if (data.type == "failJoin") {
+                if (data.type === "failJoin") {
                     __currentState.leave();
                     __currentState = __states[welcomeStateService.area];
                     __currentState.enter();
                 }
 
-                if (data.type == "changeArea") {
+                if (data.type === "changeArea") {
                     __currentState.leave();
                     __currentState = __states[data.value];
                     $scope.model.area = __currentState.area;
@@ -184,13 +182,13 @@
         __app.service('socketConnection', ['$rootScope', function ($rootScope) {
             console.log('socketConnection created');
 
-            that = this;
+            var that = this;
 
             this.handler = null;
 
             this.send = function (data) {
-                if (__ws != null)
-                    __ws.send(JSON.stringify(data));
+                if (that.__ws != null)
+                    that.__ws.send(JSON.stringify(data));
             }
 
             this.onMessage = function (evt) {
@@ -201,21 +199,21 @@
             };
 
             this.open = function(data) {
-                __ws = new WebSocket('ws://localhost:8181/');
+                that.__ws = new WebSocket('ws://localhost:8181/');
                 console.log('.. connection started');
 
-                __ws.onopen = function () {
+                that.__ws.onopen = function () {
                     console.log('.. connection open');
                     that.send(data);
                 };
-                __ws.onclose = function () { console.log('.. connection closed'); }; //И тут тоже больше ничего полезного
-                __ws.onmessage = that.onMessage;
+                that.__ws.onclose = function () { console.log('.. connection closed'); }; //И тут тоже больше ничего полезного
+                that.__ws.onmessage = that.onMessage;
             }
 
 
         }]);
 
-        __app.service('welcomeStateService', ['socketConnection', function (socketConnection) {
+        __app.service('welcomeStateService', [ function () {
             console.log('welcomeStateService created');
             
             this.area = 'welcome';
@@ -244,6 +242,7 @@
             var me = this;
             this.area = 'rooms';
             this.model = {};
+            this.model.currentPlayerId = Bag.getItem('palyerId');
             this.model.rooms = {};
             this.model.isPossibleCreate = true;
             this.model.createNewGame = function (roomSettings) {
@@ -251,20 +250,28 @@
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'createRoom', fieldSize: roomSettings.fieldSize });
             }
             this.model.removeMyGame = function () {
-                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'removeRoom', value: Bag.getItem('palyerId') });
+                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'removeRoom', value: me.model.currentPlayerId });
             }
 
             this.route = function (data) {
-                if(data.type='updateRoomList')
+                if(data.type === 'updateRoomList')
                 {
-                    var settings = data.settings;
-                    for (var i = 0; i < settings.length; ++i)
-                        if (settings[i].value != null)
-                            ;
+                    var __settings = data.settings;
+                    for (var __prop in __settings) {
+                        if (__settings.hasOwnProperty(__prop)) {
+                            var __property = __settings[__prop];
+                            if (__property)
+                                me.model.rooms[__prop] = { name: __property.name, fieldSize: __property.fieldSize, playerId: __property.Id };
+                            else 
+                                delete me.model.rooms[__prop];
+                        }
+                    }
                 }
             };
             this.leave = function () { };
-            this.enter = function () { };
+            this.enter = function() {
+                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'getAllRooms' });
+            };
         }]);
 
 

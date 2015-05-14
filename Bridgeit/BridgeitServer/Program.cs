@@ -87,7 +87,7 @@ namespace BridgeitServer
     }
 
 
-     //Убер класс, умеет всё
+    //Убер класс, умеет всё
     class ConnectionStateMashine : IConnectionHandler
     {
         public enum PossibleState { None, Anonim, Connected, Close }
@@ -297,6 +297,15 @@ namespace BridgeitServer
                         __listener.UpdateRoomList(__updateData);
                 }
             }
+            else if (inbox.type == "getAllRooms")
+            {
+                IRoomsAreaListener __roomListener;
+                if (SharedData.RoomsListeners.TryGetValue(_player.Id, out __roomListener))
+                {
+                    __roomListener.UpdateRoomList(SharedData.RoomsSettings);
+                }
+            }
+
         }
 
         private void Send(string type, string value)
@@ -331,7 +340,6 @@ namespace BridgeitServer
             SharedData.RoomsListeners.Add(_player.Id, __roomListener);
 
             Send(new OutboxMessage("system", "changeArea", Area));
-            __roomListener.UpdateRoomList(SharedData.RoomsSettings);
         }
         #endregion
 

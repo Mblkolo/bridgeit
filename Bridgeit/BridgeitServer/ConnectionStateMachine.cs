@@ -268,18 +268,18 @@ namespace BridgeitServer
 
     class RoomSettingsDto
     {
-        public string Name;
-        public int Id;
+        public string name;
+        public int id;
         public int fieldSize;
 
         public static RoomSettingsDto Convert(RoomSettings settings)
         {
-            return new RoomSettingsDto { Name = settings.Name, Id = settings.Id, fieldSize = settings.Size };
+            return settings == null ? null : new RoomSettingsDto { name = settings.Name, id = settings.Id, fieldSize = settings.Size };
         }
 
         public static RoomSettings Convert(RoomSettingsDto settings)
         {
-            return new RoomSettings { Name = settings.Name, Id = settings.Id, Size = settings.fieldSize };
+            return new RoomSettings { Name = settings.name, Id = settings.id, Size = settings.fieldSize };
         }
     }
 

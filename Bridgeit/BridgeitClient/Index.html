@@ -34,22 +34,16 @@
 
         <div ng-switch-when="rooms" ng-controller="roomsAreaController">
             <div class="window" ng-show="viewModel.mode == 'roomList'">
-                <form ng-show="model.isPossibleCreate" id="new_game">
+                <form ng-show="model.isPossibleCreate()" id="new_game">
                     <button ng-click="showCreateRoom()">Создать</button>
                 </form>
-<!--                <form ng-show="withMyGame" class="plate">
-                    <span class="name">{{myGame.name}}</span>
-                    <input type="submit" value="удалить" ng-click="removeMyGame()" />
-                    <span class="field_size">{{myGame.fieldSize}}x{{myGame.fieldSize}}</span>
-                    <span class="time">{{myGame.time}}с</span>
-                    <span class="more_time">{{myGame.moreTime}}м</span>
-                </form>-->
-                <form ng-repeat="room in model.rooms" class="plate">
+                <form ng-repeat="room in model.rooms | orderBy:['-myGame','playerId']" class="plate">
                     <span class="name">{{room.name}}</span>
                     <span class="field_size">{{room.fieldSize}}x{{room.fieldSize}}</span>
                     <span class="time">{{room.time}}с</span>
                     <span class="more_time">{{room.moreTime}}м</span>
-                    <a href="#">Играть</a>
+                    <button ng-show="room.myGame" ng-click="removeMyGame()">Удалить</button>
+                    <button ng-hide="room.myGame" >Играть</button>
                 </form>
             </div>
             <div class="window game_creation" ng-show="viewModel.mode == 'createRoom'">
@@ -175,7 +169,7 @@
                 $scope.viewModel.mode = 'roomList';
             };
             $scope.removeMyGame = function () {
-                $scope.model.removeGame();
+                $scope.model.removeMyGame();
             };
         }]);
 
@@ -242,11 +236,21 @@
             var me = this;
             this.area = 'rooms';
             this.model = {};
-            this.model.currentPlayerId = Bag.getItem('palyerId');
-            this.model.rooms = {};
-            this.model.isPossibleCreate = true;
+            this.getPlayerId = function()
+            {
+                return Bag.getItem('playerId');
+            }
+            this.model.rooms = [];
+            this.model.isPossibleCreate = function()
+            {
+                var __playerId =  Bag.getItem('playerId');
+                for (var __prop in me.model.rooms)
+                    if (me.model.rooms.hasOwnProperty(__prop) && me.model.rooms[__prop].playerId == __playerId)
+                        return false;
+
+                return true;
+            }
             this.model.createNewGame = function (roomSettings) {
-                me.model.isPossibleCreate = false; 
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'createRoom', fieldSize: roomSettings.fieldSize });
             }
             this.model.removeMyGame = function () {
@@ -256,14 +260,25 @@
             this.route = function (data) {
                 if(data.type === 'updateRoomList')
                 {
+                    var __playerId = me.getPlayerId();
                     var __settings = data.settings;
                     for (var __prop in __settings) {
                         if (__settings.hasOwnProperty(__prop)) {
                             var __property = __settings[__prop];
+                            
+                            for(var i = me.model.rooms.length; i--;) {
+                                if(me.model.rooms[i].playerId == __prop) {
+                                    me.model.rooms.splice(i, 1);
+                                }
+                            }
+
                             if (__property)
-                                me.model.rooms[__prop] = { name: __property.name, fieldSize: __property.fieldSize, playerId: __property.Id };
-                            else 
-                                delete me.model.rooms[__prop];
+                                me.model.rooms.push({
+                                    name: __property.name,
+                                    fieldSize: __property.fieldSize,
+                                    playerId: __property.id,
+                                    myGame: __property.id == __playerId
+                                });
                         }
                     }
                 }

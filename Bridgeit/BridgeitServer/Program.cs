@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -263,7 +264,7 @@ namespace BridgeitServer
                     else
                     {
                         _player = new Player(inbox.value, GenerateSessionId());
-                        Send("setPlayerId", _player.Id.ToString());
+                        Send(new OutboxMessage("system", "setPlayerId", _player.Id.ToString(CultureInfo.InvariantCulture)));
                         AreaRooms();
                     }
                 }
@@ -278,7 +279,7 @@ namespace BridgeitServer
                 if (__inbox.fieldSize < 3 || __inbox.fieldSize > 10)
                     return; //TODO выругаться
 
-                if (SharedData.RoomsSettings.Values.Any(x => x.Name == _player.Name))
+                if (SharedData.RoomsSettings.ContainsKey(_player.Id))
                     return;
 
                 var __newSettings = new RoomSettings { Size = __inbox.fieldSize, Name = _player.Name, Id = _player.Id };

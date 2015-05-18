@@ -43,7 +43,7 @@
                     <span class="time">{{room.time}}с</span>
                     <span class="more_time">{{room.moreTime}}м</span>
                     <button ng-show="room.myGame" ng-click="removeMyGame()">Удалить</button>
-                    <button ng-hide="room.myGame" >Играть</button>
+                    <button ng-hide="room.myGame" ng-click="playGame($index)" >Играть</button>
                 </form>
             </div>
             <div class="window game_creation" ng-show="viewModel.mode == 'createRoom'">
@@ -171,6 +171,10 @@
             $scope.removeMyGame = function () {
                 $scope.model.removeMyGame();
             };
+
+            $scope.playGame = function (index) {
+                $scope.model.playGame($scope.model.rooms[index]);
+            };
         }]);
 
         __app.service('socketConnection', ['$rootScope', function ($rootScope) {
@@ -255,6 +259,10 @@
             }
             this.model.removeMyGame = function () {
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'removeRoom', value: me.model.currentPlayerId });
+            }
+
+            this.model.playGame = function (game) {
+                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'joinGame', value: game.playerId});
             }
 
             this.route = function (data) {

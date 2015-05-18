@@ -264,6 +264,7 @@ namespace BridgeitServer
                     else
                     {
                         _player = new Player(inbox.value, GenerateSessionId());
+                        SharedData.Players.Add(_player.Id, _player);
                         Send(new OutboxMessage("system", "setPlayerId", _player.Id.ToString(CultureInfo.InvariantCulture)));
                         AreaRooms();
                     }
@@ -305,6 +306,24 @@ namespace BridgeitServer
                 {
                     __roomListener.UpdateRoomList(SharedData.RoomsSettings);
                 }
+            }
+            else if(inbox.type == "joinGame")
+            {
+                int __opponentId;
+                if (!int.TryParse(inbox.value, out __opponentId))
+                    return;
+
+                Player __opponent;
+                if (!SharedData.Players.TryGetValue(__opponentId, out __opponent))
+                    return;
+
+                RoomSettings __roomSettings;
+                if (!SharedData.RoomsSettings.TryGetValue(__opponentId, out __roomSettings))
+                    return;
+
+                SessionStateMashine d;
+
+
             }
 
         }
@@ -365,7 +384,7 @@ namespace BridgeitServer
     {
         public readonly Dictionary<Guid, SessionStateMashine> AbandonedLowFsm = new Dictionary<Guid, SessionStateMashine>();
         public readonly List<ConnectionStateMashine> LiveConnection = new List<ConnectionStateMashine>();
-        public readonly Dictionary<string, Player> Players = new Dictionary<string, Player>();
+        public readonly Dictionary<int, Player> Players = new Dictionary<int, Player>();
 
         public readonly Dictionary<int, RoomSettings> RoomsSettings = new Dictionary<int, RoomSettings>();
         public readonly Dictionary<int, IRoomsAreaListener> RoomsListeners = new Dictionary<int, IRoomsAreaListener>();

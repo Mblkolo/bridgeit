@@ -321,7 +321,7 @@ namespace BridgeitServer
                 if (!SharedData.RoomsSettings.TryGetValue(__opponentId, out __roomSettings))
                     return;
 
-                SessionStateMashine d;
+                //SessionStateMashine d;
 
 
             }

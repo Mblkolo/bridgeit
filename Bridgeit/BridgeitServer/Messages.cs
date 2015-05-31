@@ -7,14 +7,6 @@ using Fleck;
 
 namespace BridgeitServer
 {
-    interface IInboxState
-    {
-        void OnEnter();
-        void OnMessage(string message);
-        void OnLeave();
-        string StateName { get; }
-    }
-
     class OutboxMessage
     {
         public string area;
@@ -96,7 +88,4 @@ namespace BridgeitServer
         }
 
     }
-
-
-
 }

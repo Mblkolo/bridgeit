@@ -14,22 +14,15 @@ namespace BridgeitServer
         static void Main(string[] args)
         {
             FleckLog.Level = LogLevel.Debug;
-            var allSockets = new List<IWebSocketConnection>();
             var server = new WebSocketServer("ws://0.0.0.0:8181");
 
-            var usersById = new Dictionary<Guid, List<IWebSocketConnection>>();
             var stateManager = new StateManager();
-
             server.Start(stateManager.ConfigureConnection);
 
 
             var input = Console.ReadLine();
             while (input != "exit")
             {
-                foreach (var socket in allSockets.ToList())
-                {
-                    socket.Send(input);
-                }
                 input = Console.ReadLine();
             }
         }
@@ -40,27 +33,14 @@ namespace BridgeitServer
     /// </summary>
     internal class StateManager
     {
-        //public readonly GameWorld World = new GameWorld();
         public readonly SharedStateData SharedData = new SharedStateData();
         public readonly SingleThreadWorker<Action> SingleThread;
-
-        //private readonly List<SystemState> _states = new List<SystemState>();
 
         public StateManager()
         {
             SingleThread = new SingleThreadWorker<Action>(new SimpleSingleThread());
             SingleThread.Start();
         }
-
-        //public void Add(SystemState systemState)
-        //{
-        //    _states.Add(systemState);
-        //}
-
-        //public void Remove(SystemState systemState)
-        //{
-        //    _states.Remove(systemState);
-        //}
 
         public void ConfigureConnection(IWebSocketConnection connection)
         {

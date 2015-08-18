@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Fleck;
+using Newtonsoft.Json;
 
 namespace BridgeitServer
 {
@@ -25,9 +26,11 @@ namespace BridgeitServer
         public int Size;
     }
 
-    internal class GameServer
+    internal class GameServer : IConnectionHandler
     {
         public readonly SingleThreadWorker<Action> SingleThread;
+
+        public readonly GameRepository Rep = new GameRepository();
 
         public GameServer()
         {
@@ -38,50 +41,84 @@ namespace BridgeitServer
         public void ConfigureConnection(IWebSocketConnection connection)
         {
             var __proxy = new ConnectionProxy(connection, SingleThread);
-            var __connectionHandler = new PlayerConnectionHandler(__proxy);
-            __proxy.Handler = __connectionHandler;
+            __proxy.Handler = this;
+            Rep.AnonimConnections.Add(__proxy.Id, __proxy);
+        }
+
+
+        public void OnError(Guid id, Exception e)
+        {
+            //TODO фигачить в лог
+            throw new NotImplementedException();
+        }
+
+        public void OnClose(Guid id)
+        {
+            //На анонимов строго пофиг
+            if (Rep.AnonimConnections.Remove(id))
+                return;
+
+            //А вот теперь нужно найти сессию и сообщить, что пользователь отключен
+            //А сессия должна быть обязательно
+            if (Rep.SessionConnections.ContainsKey(id))
+            {
+                var connect = Rep.SessionConnections[id];
+                Rep.LostSessions.Add(connect.Id, connect.Session);
+                Rep.SessionConnections.Remove(id);
+                return;
+            }
+        }
+
+        public void OnOpen(Guid id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnMessage(Guid id, string message)
+        {
+            var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
+            if (__inbox.area == "system" && __inbox.type == "join")
+            {
+                if (!Rep.AnonimConnections.ContainsKey(id))
+                    return;
+
+                Guid sessionId;
+                if(Guid.TryParse(__inbox.value, out sessionId) && Rep.LostSessions.ContainsKey(sessionId))
+                {
+                    //Восстанавливаем сессию
+                    var connction = Rep.AnonimConnections[id];
+                    Rep.AnonimConnections.Remove(id);
+                    connction.Session = Rep.LostSessions[sessionId];
+                    Rep.LostSessions.Remove(sessionId);
+                    Rep.SessionConnections.Add(id, connction);
+                }
+                else
+                {
+                    //Создаём новую сессию
+
+                }
+
+            }
+                
+            if (__inbox.area == "system" && __inbox.type == "logout")
+            {
+                //Send(new OutboxMessage("system", "logout", null));
+            }
         }
     }
 
-
-    class PlayerConnectionHandler : IConnectionHandler
+    internal class GameSession
     {
-        private ConnectionProxy _proxy;
-        
-        
-        public enum PossibleState { None, Anonim, Connected, Close }
+        public readonly Guid Id = Guid.NewGuid();
+    }
 
-        public PossibleState State;
+    internal class GameRepository
+    {
+        public readonly Dictionary<Guid, ConnectionProxy> AnonimConnections = new Dictionary<Guid, ConnectionProxy>();
+        public readonly Dictionary<Guid, ConnectionProxy> SessionConnections = new Dictionary<Guid, ConnectionProxy>();
 
-        public PlayerConnectionHandler(ConnectionProxy proxy)
-        {
-            _proxy = proxy;
-        }
-
-        #region обрабтка сообщений
-
-        public void OnError(Exception e)
-        {
-
-        }
-
-        public void OnClose()
-        {
-
-        }
-
-        public void OnOpen()
-        {
-
-        }
-
-        public void OnMessage(string message)
-        {
-
-        }
-
-        #endregion
-
+        //Будет специальный сервис, кторый будет убивать потерянные сессии по таймауту
+        public readonly Dictionary<Guid, GameSession> LostSessions = new Dictionary<Guid, GameSession>();
 
     }
 }

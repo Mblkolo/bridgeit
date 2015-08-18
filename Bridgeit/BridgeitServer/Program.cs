@@ -85,23 +85,23 @@ namespace BridgeitServer
 
         #region обрабтка сообщений
 
-        public void OnError(Exception e)
+        public void OnError(Guid id, Exception e)
         {
-            OnClose();
+            //OnClose(id);
         }
 
-        public void OnClose()
+        public void OnClose(Guid id)
         {
             StateClose();
         }
 
-        public void OnOpen()
+        public void OnOpen(Guid id)
         {
             if (State == PossibleState.None)
                 StateAnonim();
         }
 
-        public void OnMessage(string message)
+        public void OnMessage(Guid id, string message)
         {
             if (State == PossibleState.Anonim)
                 OnMessageAnonim(message);
@@ -402,37 +402,40 @@ namespace BridgeitServer
         private void OnError(Exception e)
         {
             if (Handler != null)
-                _singleThread.Put(() => Handler.OnError(e));
+                _singleThread.Put(() => Handler.OnError(Id, e));
         }
 
         private void OnClose()
         {
             if (Handler != null)
-                _singleThread.Put(() => Handler.OnClose());
+                _singleThread.Put(() => Handler.OnClose(Id));
         }
 
         private void OnOpen()
         {
             if (Handler != null)
-                _singleThread.Put(() => Handler.OnOpen());
+                _singleThread.Put(() => Handler.OnOpen(Id));
         }
 
         private void OnMessage(string message)
         {
             if (Handler != null)
-                _singleThread.Put(() => Handler.OnMessage(message));
+                _singleThread.Put(() => Handler.OnMessage(Id, message));
         }
 
         public IWebSocketConnection Connection { get; private set; }
         public IConnectionHandler Handler { get; set; }
+        public readonly Guid Id = Guid.NewGuid();
+
+        public GameSession Session;
 
     }
 
     interface IConnectionHandler
     {
-        void OnError(Exception e);
-        void OnClose();
-        void OnOpen();
-        void OnMessage(string message);
+        void OnError(Guid id, Exception e);
+        void OnClose(Guid id);
+        void OnOpen(Guid id);
+        void OnMessage(Guid id, string message);
     }
 }

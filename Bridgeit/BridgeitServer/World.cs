@@ -74,35 +74,74 @@ namespace BridgeitServer
             throw new NotImplementedException();
         }
 
-        public void OnMessage(Guid id, string message)
+        public void OnMessage(Guid connectionId, string message)
         {
             var __inbox = JsonConvert.DeserializeObject<InboxMessage>(message);
-            if (__inbox.area == "system" && __inbox.type == "join")
+            if (__inbox.area == "system")
+                SystemArea(connectionId, message, __inbox);
+
+            if (__inbox.area == "welcome")
+                WelcomeArea(connectionId, message, __inbox);
+
+
+        }
+
+        public void SystemArea(Guid connectionId, string message, InboxMessage inbox)
+        {
+            if (inbox.area != "system")
+                return;
+
+
+            if (inbox.type == "join")
             {
-                if (!Rep.AnonimConnections.ContainsKey(id))
+                if (!Rep.AnonimConnections.ContainsKey(connectionId))
                     return;
 
+                GameSession session;
                 Guid sessionId;
-                if(Guid.TryParse(__inbox.value, out sessionId) && Rep.LostSessions.ContainsKey(sessionId))
+                if (Guid.TryParse(inbox.value, out sessionId) && Rep.LostSessions.ContainsKey(sessionId))
                 {
                     //Восстанавливаем сессию
-                    var connction = Rep.AnonimConnections[id];
-                    Rep.AnonimConnections.Remove(id);
-                    connction.Session = Rep.LostSessions[sessionId];
+                    session = Rep.LostSessions[sessionId];
                     Rep.LostSessions.Remove(sessionId);
-                    Rep.SessionConnections.Add(id, connction);
                 }
                 else
                 {
                     //Создаём новую сессию
-
+                    session = new GameSession();
                 }
-
+                var connection = Rep.AnonimConnections[connectionId];
+                Rep.AnonimConnections.Remove(connectionId);
+                connection.Session = session;
+                Rep.SessionConnections.Add(connectionId, connection);
             }
-                
-            if (__inbox.area == "system" && __inbox.type == "logout")
+
+            if (inbox.type == "logout")
             {
+                if (!Rep.SessionConnections.ContainsKey(connectionId))
+                    return;
+
+                var connection = Rep.SessionConnections[connectionId];
+                Rep.SessionConnections.Remove(connectionId);
+                Rep.LostSessions.Add(connection.Session.Id, connection.Session);
+                connection.Session = null;
+
+                //TODO отключить таки игрока
+
                 //Send(new OutboxMessage("system", "logout", null));
+            }
+
+        }
+
+        public void WelcomeArea(Guid connectionId, string message, InboxMessage inbox)
+        {
+            if (inbox.area != "welcome")
+                return;
+
+            if(inbox.type == "login")
+            {
+                //1. Проверить пользователей с таким имененем
+                ///if()
             }
         }
     }

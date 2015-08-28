@@ -138,10 +138,24 @@ namespace BridgeitServer
             if (inbox.area != "welcome")
                 return;
 
+            if (!Rep.SessionConnections.ContainsKey(connectionId))
+                return;
+
             if(inbox.type == "login")
             {
+                var __userName = inbox.value;
                 //1. Проверить пользователей с таким имененем
-                ///if()
+                if (Rep.SessionConnections.Values.Any(x => x.Session.Name == __userName) ||
+                    Rep.LostSessions.Values.Any(x => x.Name == __userName))
+                {
+                    //TODO сообщить об ошибке что такое имя уже занято
+                    return;
+                }
+
+                Rep.SessionConnections[connectionId].Session.Name = __userName;
+
+
+
             }
         }
     }
@@ -149,6 +163,8 @@ namespace BridgeitServer
     internal class GameSession
     {
         public readonly Guid Id = Guid.NewGuid();
+
+        public string Name;
     }
 
     internal class GameRepository

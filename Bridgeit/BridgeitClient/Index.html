@@ -128,15 +128,13 @@
             socketConnection.open({ area: "system", type: "join", value: Bag.getItem('sessionId') });
         }]);
 
-        __app.controller('welcomeAreaController', ['$scope', 'socketConnection', function ($scope, socketConnection) {
+        __app.controller('welcomeAreaController', ['$scope', 'welcomeStateService', function ($scope, welcomeStateService) {
             console.log('welcomeAreaController created');
 
-            var __model = {
-                errorMessage: null,
-                userName: null
-            };
+            var __model = welcomeStateService.model;
+            
             __model.onLogin = function () {
-                socketConnection.send({ area: "welcome", type: "login", sessionId: Bag.getItem("sessionId"), value: __model.userName });
+                __model.sendLogin();
             };
             __model.onCloseErrorMessage = function () {
                 __model.errorMessage = null;
@@ -184,10 +182,10 @@
 
             this.handler = null;
 
-            this.send = function (data) {
+            this.send = function(data) {
                 if (that.__ws != null)
                     that.__ws.send(JSON.stringify(data));
-            }
+            };
 
             this.onMessage = function (evt) {
                 console.log( evt.data );
@@ -196,7 +194,7 @@
                 }
             };
 
-            this.open = function(data) {
+            this.open = function (data) {
                 that.__ws = new WebSocket('ws://localhost:8181/');
                 console.log('.. connection started');
 
@@ -206,17 +204,30 @@
                 };
                 that.__ws.onclose = function () { console.log('.. connection closed'); }; //И тут тоже больше ничего полезного
                 that.__ws.onmessage = that.onMessage;
-            }
+            };
 
 
         }]);
 
-        __app.service('welcomeStateService', [ function () {
+        __app.service('welcomeStateService', ['socketConnection', function (socketConnection) {
             console.log('welcomeStateService created');
-            
+            var me = this;
+
+            this.model = {
+                errorMessage: null,
+                userName: null
+            };
+
+            this.model.sendLogin = function() {
+                socketConnection.send({ area: "welcome", type: "login", sessionId: Bag.getItem("sessionId"), value: me.model.userName });
+            };
+
             this.area = 'welcome';
             this.route = function (data) {
                 console.log(data);
+                if (data.type === 'showError') {
+                    me.model.errorMessage = data.value;
+                }
             };
             this.leave = function () { };
             this.enter = function () { };
@@ -240,30 +251,28 @@
             var me = this;
             this.area = 'rooms';
             this.model = {};
-            this.getPlayerId = function()
-            {
+            this.getPlayerId = function() {
                 return Bag.getItem('playerId');
-            }
+            };
             this.model.rooms = [];
-            this.model.isPossibleCreate = function()
-            {
-                var __playerId =  Bag.getItem('playerId');
+            this.model.isPossibleCreate = function() {
+                var __playerId = Bag.getItem('playerId');
                 for (var __prop in me.model.rooms)
                     if (me.model.rooms.hasOwnProperty(__prop) && me.model.rooms[__prop].playerId == __playerId)
                         return false;
 
                 return true;
-            }
-            this.model.createNewGame = function (roomSettings) {
+            };
+            this.model.createNewGame = function(roomSettings) {
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'createRoom', fieldSize: roomSettings.fieldSize });
-            }
-            this.model.removeMyGame = function () {
+            };
+            this.model.removeMyGame = function() {
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'removeRoom', value: me.model.currentPlayerId });
-            }
+            };
 
-            this.model.playGame = function (game) {
-                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'joinGame', value: game.playerId});
-            }
+            this.model.playGame = function(game) {
+                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'joinGame', value: game.playerId });
+            };
 
             this.route = function (data) {
                 if(data.type === 'updateRoomList')

@@ -100,9 +100,9 @@
                 if (data.type === 'setPlayerId') 
                     Bag.setItem('playerId', data.value);
 
-                if (data.type === "failJoin") {
+                if (data.type === "logout") {
                     __currentState.leave();
-                    __currentState = __states[welcomeStateService.area];
+                    __currentState = __states[defaultStateService.area];
                     __currentState.enter();
                 }
 

@@ -16,8 +16,8 @@ namespace BridgeitServer
             FleckLog.Level = LogLevel.Debug;
             var server = new WebSocketServer("ws://0.0.0.0:8181");
 
-            var stateManager = new StateManager();
-            server.Start(stateManager.ConfigureConnection);
+            var gameServer = new GameServer();
+            server.Start(gameServer.ConfigureConnection);
 
 
             var input = Console.ReadLine();
@@ -397,6 +397,11 @@ namespace BridgeitServer
         public void Send(string message)
         {
             Connection.Send(message);
+        }
+
+        public void Send(OutboxMessage message)
+        {
+            Connection.Send(JsonConvert.SerializeObject(message));
         }
 
         private void OnError(Exception e)

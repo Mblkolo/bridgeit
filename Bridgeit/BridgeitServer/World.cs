@@ -32,6 +32,12 @@ namespace BridgeitServer
 
         public readonly GameRepository Rep = new GameRepository();
 
+        public int lastPlayerId;
+        public int GetNextPlayerId()
+        {
+            return ++lastPlayerId;
+        }
+
         public GameServer()
         {
             SingleThread = new SingleThreadWorker<Action>(new SimpleSingleThread());
@@ -49,7 +55,7 @@ namespace BridgeitServer
         public void OnError(Guid id, Exception e)
         {
             //TODO фигачить в лог
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
         }
 
         public void OnClose(Guid id)
@@ -71,7 +77,6 @@ namespace BridgeitServer
 
         public void OnOpen(Guid id)
         {
-            throw new NotImplementedException();
         }
 
         public void OnMessage(Guid connectionId, string message)
@@ -114,6 +119,8 @@ namespace BridgeitServer
                 Rep.AnonimConnections.Remove(connectionId);
                 connection.Session = session;
                 Rep.SessionConnections.Add(connectionId, connection);
+                connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "setSessionId", value = session.Id.ToString() }));
+                connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "changeArea", value = "welcome" }));
             }
 
             if (inbox.type == "logout")
@@ -128,7 +135,7 @@ namespace BridgeitServer
 
                 //TODO отключить таки игрока
 
-                //Send(new OutboxMessage("system", "logout", null));
+                connection.Send(new OutboxMessage("system", "logout", null));
             }
 
         }
@@ -145,17 +152,19 @@ namespace BridgeitServer
             {
                 var __userName = inbox.value;
                 //1. Проверить пользователей с таким имененем
-                if (Rep.SessionConnections.Values.Any(x => x.Session.Name == __userName) ||
-                    Rep.LostSessions.Values.Any(x => x.Name == __userName))
+                if (Rep.SessionConnections.Values.Any(x => x.Session.PlayerName == __userName) ||
+                    Rep.LostSessions.Values.Any(x => x.PlayerName == __userName))
                 {
                     //TODO сообщить об ошибке что такое имя уже занято
                     return;
                 }
 
-                Rep.SessionConnections[connectionId].Session.Name = __userName;
+                var connection = Rep.SessionConnections[connectionId];
+                connection.Session.PlayerName = __userName;
+                connection.Session.PlayerId = GetNextPlayerId();
 
-
-
+                connection.Send(new OutboxMessage { area = "system", type = "setPlayerId", value = connection.Session.PlayerId.ToString() });
+                connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "rooms" });
             }
         }
     }
@@ -164,7 +173,8 @@ namespace BridgeitServer
     {
         public readonly Guid Id = Guid.NewGuid();
 
-        public string Name;
+        public string PlayerName;
+        public int PlayerId;
     }
 
     internal class GameRepository

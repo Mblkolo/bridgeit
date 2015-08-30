@@ -34,6 +34,12 @@ namespace BridgeitServer
         {
             settings = rooms.ToDictionary(x => x.Key, v => RoomSettingsDto.Convert(v.Value));
         }
+
+        public RoomSettingsOutboxMessage(string area, string type, int id, RoomSettings singleSettings)
+            : base(area, type, null)
+        {
+            settings = new Dictionary<int, RoomSettingsDto> { { id, RoomSettingsDto.Convert(singleSettings) } };
+        }
     }
 
     class RoomSettingsDto

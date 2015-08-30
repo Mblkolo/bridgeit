@@ -24,6 +24,7 @@ namespace BridgeitServer
         public int Id;
         public string Name;
         public int Size;
+        public bool IsDisabled;
     }
 
     internal class GameServer : IConnectionHandler
@@ -88,6 +89,8 @@ namespace BridgeitServer
             if (__inbox.area == "welcome")
                 WelcomeArea(connectionId, message, __inbox);
 
+            if (__inbox.area == "rooms")
+                RoomsArea(connectionId, message, __inbox);
 
         }
 
@@ -113,14 +116,15 @@ namespace BridgeitServer
                 else
                 {
                     //Создаём новую сессию
-                    session = new GameSession();
+                    session = new GameSession { Area = "welcome" };
                 }
                 var connection = Rep.AnonimConnections[connectionId];
                 Rep.AnonimConnections.Remove(connectionId);
                 connection.Session = session;
                 Rep.SessionConnections.Add(connectionId, connection);
-                connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "setSessionId", value = session.Id.ToString() }));
-                connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "changeArea", value = "welcome" }));
+
+                connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "setSessionId", value = connection.Id.ToString() }));
+                connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "changeArea", value = session.Area }));
             }
 
             if (inbox.type == "logout")
@@ -130,7 +134,7 @@ namespace BridgeitServer
 
                 var connection = Rep.SessionConnections[connectionId];
                 Rep.SessionConnections.Remove(connectionId);
-                Rep.LostSessions.Add(connection.Session.Id, connection.Session);
+                Rep.LostSessions.Add(connection.Id, connection.Session);
                 connection.Session = null;
 
                 //TODO отключить таки игрока
@@ -162,19 +166,67 @@ namespace BridgeitServer
                 var connection = Rep.SessionConnections[connectionId];
                 connection.Session.PlayerName = __userName;
                 connection.Session.PlayerId = GetNextPlayerId();
+                connection.Session.Area = "rooms";
 
                 connection.Send(new OutboxMessage { area = "system", type = "setPlayerId", value = connection.Session.PlayerId.ToString() });
                 connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "rooms" });
+            }
+        }
+
+        public void RoomsArea(Guid connectionId, string message, InboxMessage inbox)
+        {
+            if (inbox.area != "rooms")
+                return;
+
+            if (!Rep.SessionConnections.ContainsKey(connectionId))
+                return;
+
+            var connection = Rep.SessionConnections[connectionId];
+            if (connection.Session.Area != "rooms")
+                return;
+
+            if(inbox.type == "getAllRooms")
+            {
+                var settings = Rep.RoomsSettings.Where(x => !x.Value.IsDisabled).ToDictionary(x => x.Key, x => x.Value);
+                var outbox = new RoomSettingsOutboxMessage("rooms", "updateRoomList", settings);
+                connection.Send(outbox);
+                return;
+            }
+
+            if (inbox.type == "createRoom")
+            {
+                var roomSettings = JsonConvert.DeserializeObject<RoomSettingsInboxMessage>(message);
+                var __newSettings = new RoomSettings { Id = connection.Session.PlayerId, Size = roomSettings.fieldSize, Name = connection.Session.PlayerName };
+
+                Rep.RoomsSettings[connection.Session.PlayerId] = __newSettings;
+                var outbox = new RoomSettingsOutboxMessage("rooms", "updateRoomList", __newSettings.Id, __newSettings);
+                foreach(var anyConnection in Rep.SessionConnections.Values)
+                    anyConnection.Send(outbox);
+
+                return;
+            }
+
+            if (inbox.type == "removeRoom")
+            {
+                if (Rep.RoomsSettings.Remove(connection.Session.PlayerId))
+                    foreach (var anyConnection in Rep.SessionConnections.Values)
+                        anyConnection.Send(new RoomSettingsOutboxMessage("rooms", "updateRoomList", connection.Session.PlayerId, null));
+            }
+
+            if(inbox.type == "joinGame")
+            {
+
             }
         }
     }
 
     internal class GameSession
     {
-        public readonly Guid Id = Guid.NewGuid();
+        //public readonly Guid Id = Guid.NewGuid();
 
         public string PlayerName;
         public int PlayerId;
+        public string Area;
     }
 
     internal class GameRepository
@@ -185,5 +237,7 @@ namespace BridgeitServer
         //Будет специальный сервис, кторый будет убивать потерянные сессии по таймауту
         public readonly Dictionary<Guid, GameSession> LostSessions = new Dictionary<Guid, GameSession>();
 
+        //Все комнаты доступные для игры
+        public IDictionary<int, RoomSettings> RoomsSettings = new Dictionary<int, RoomSettings>();
     }
 }

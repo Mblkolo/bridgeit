@@ -271,7 +271,7 @@
             };
 
             this.model.playGame = function(game) {
-                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'joinGame', value: game.playerId });
+                socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'joinToRoom', value: game.playerId });
             };
 
             this.route = function (data) {

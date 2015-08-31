@@ -432,7 +432,7 @@ namespace BridgeitServer
         public IConnectionHandler Handler { get; set; }
         public readonly Guid Id = Guid.NewGuid();
 
-        public GameSession Session;
+        public PlayerSession Session;
 
     }
 

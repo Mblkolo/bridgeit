@@ -98,6 +98,9 @@ namespace BridgeitServer
             if (__inbox.area == "rooms")
                 RoomsArea(connectionId, message, __inbox);
 
+            if (__inbox.area == "bridgeit")
+                BridgeitArea(connectionId, message, __inbox);
+
         }
 
         public void SystemArea(Guid connectionId, string message, InboxMessage inbox)
@@ -130,7 +133,7 @@ namespace BridgeitServer
                 Rep.SessionConnections.Add(connectionId, connection);
 
                 if (session.Id != sessionId)
-                    connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "setSessionId", value = connection.Id.ToString() }));
+                    connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "setSessionId", value = connection.Session.Id.ToString() }));
                 connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "changeArea", value = session.Area }));
             }
 
@@ -231,7 +234,7 @@ namespace BridgeitServer
                     return;
 
                 var oppnentConnection = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == opponentId);
-                if (oppnentConnection == null)
+                if (oppnentConnection == null || oppnentConnection.Session.Area != "rooms")
                     return;
 
                 RoomSettings settings;
@@ -240,7 +243,29 @@ namespace BridgeitServer
 
                 var room = new BridgeitRoom(GetNextRoomId(), oppnentConnection.Session.Id, connection.Session.Id);
                 Rep.Rooms.Add(room.Id, room);
+
+                connection.Session.Area = "bridgeit";
+                oppnentConnection.Session.Area = "bridgeit";
+
+                connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "bridgeit" });
+                oppnentConnection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "bridgeit" });
+                return;
             }
+        }
+
+        public void BridgeitArea(Guid connectionId, string message, InboxMessage inbox)
+        {
+            if (inbox.area != "bridgeit")
+                return;
+
+            if (!Rep.SessionConnections.ContainsKey(connectionId))
+                return;
+
+            var connection = Rep.SessionConnections[connectionId];
+            if (connection.Session.Area != "bridgeit")
+                return;
+
+
         }
     }
 

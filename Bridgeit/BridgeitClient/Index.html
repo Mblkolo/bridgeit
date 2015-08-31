@@ -71,7 +71,9 @@
                 </form>
             </div>
         </div>
-        <!--<button ng-click="model.area = 'welcome'" >ok da?</button>-->
+        <div ng-switch-when="bridgeit" ng-controller="bridgeitAreaController">
+            Да, ты в игре
+        </div>
     </div>
 
 
@@ -80,8 +82,8 @@
     <script type="text/javascript">
         var __app = angular.module('bridgeitApp', []);
 
-        __app.controller('areaController', ['$scope', 'socketConnection', 'welcomeStateService', 'defaultStateService', 'roomsStateService',
-                function ($scope, socketConnection, welcomeStateService, defaultStateService, roomsStateService) {
+        __app.controller('areaController', ['$scope', 'socketConnection', 'welcomeStateService', 'defaultStateService', 'roomsStateService', 'bridgeitStateService',
+        function ($scope, socketConnection, welcomeStateService, defaultStateService, roomsStateService, bridgeitStateService) {
 
             console.log('areaController created');
 
@@ -92,6 +94,7 @@
             __states[defaultStateService.area] = defaultStateService;
             __states[welcomeStateService.area] = welcomeStateService;
             __states[roomsStateService.area] = roomsStateService;
+            __states[bridgeitStateService.area] = bridgeitStateService;
 
             var systemRoute = function (data) {
                 if (data.type === "setSessionId")
@@ -306,7 +309,27 @@
             };
         }]);
 
+        __app.service('bridgeitStateService', ['socketConnection', function (socketConnection) {
+            console.log('bridgeitStateService created');
 
+            var me = this;
+            this.area = 'bridgeit';
+            this.model = {};
+            
+            this.route = function (data) {
+
+            };
+            this.leave = function () { };
+            this.enter = function () { };
+        }]);
+
+        __app.controller('bridgeitAreaController', ['$scope', 'bridgeitStateService', function ($scope, bridgeitStateService) {
+            console.log('bridgeitAreaController created');
+
+            $scope.model = bridgeitStateService.model;
+
+            $scope.viewModel = {};
+        }]);
 
     </script>
 </body>

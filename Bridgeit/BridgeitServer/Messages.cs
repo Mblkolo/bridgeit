@@ -42,6 +42,26 @@ namespace BridgeitServer
         }
     }
 
+    class BridgeitOutboxMessage : OutboxMessage
+    {
+        public int bridgeitId;
+        public int ownerId;
+        public int opponentId;
+        /// <summary>Время на ход в секундах</summary>
+        public int stepTime;
+        public int fieldSize;
+        public BridgeitStateDTO state;
+    }
+
+    class BridgeitStateDTO
+    {
+        //Игровое поле, всегда квадратное
+        public byte[,] field;
+        public int timeout;
+        /// <summary>Кто ходит</summary>
+        public int activeId;
+    }
+
     class RoomSettingsDto
     {
         public string name;

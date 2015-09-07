@@ -241,7 +241,7 @@ namespace BridgeitServer
                 if (!Rep.RoomsSettings.TryGetValue(oppnentConnection.Session.PlayerId, out settings))
                     return;
 
-                var room = new BridgeitRoom(GetNextRoomId(), oppnentConnection.Session.Id, connection.Session.Id);
+                var room = new BridgeitRoom(GetNextRoomId(), settings, connection.Session.PlayerId, oppnentConnection.Session.PlayerId);
                 Rep.Rooms.Add(room.Id, room);
 
                 connection.Session.Area = "bridgeit";
@@ -265,7 +265,11 @@ namespace BridgeitServer
             if (connection.Session.Area != "bridgeit")
                 return;
 
+            if (inbox.type == "getRoomState")
+            {
+                connection.Send(JsonConvert.SerializeObject(new int[10,2]));
 
+            }
         }
     }
 
@@ -280,9 +284,27 @@ namespace BridgeitServer
     internal class BridgeitRoom
     {
         public readonly int Id;
-        public BridgeitRoom(int roomId, Guid firstId, Guid secondId)
+        public readonly int OwnerId;
+        public readonly int OppnentId;
+
+        //Время на ход
+        public readonly int StepTime;
+        public readonly int FieldSize;
+
+        //Кто сейчас ходит
+        public int activeId;
+        //Номер хода
+        public int step;
+
+        public BridgeitRoom(int roomId, RoomSettings settings, int ownerId, int oppnentId)
         {
             Id = roomId;
+            OwnerId = ownerId;
+            OppnentId = oppnentId;
+            StepTime = 30;
+            FieldSize = settings.Size;
+
+
         }
     }
 
@@ -293,7 +315,7 @@ namespace BridgeitServer
 
         //Будет специальный сервис, кторый будет убивать потерянные сессии по таймауту
         public readonly Dictionary<Guid, PlayerSession> LostSessions = new Dictionary<Guid, PlayerSession>();
-
+            
         //Все комнаты доступные для игры
         public IDictionary<int, RoomSettings> RoomsSettings = new Dictionary<int, RoomSettings>();
 

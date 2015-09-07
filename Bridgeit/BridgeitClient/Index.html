@@ -6,9 +6,10 @@
     <script type="text/javascript">
         var Bag = localStorage;
     </script>
+    <script src="Scripts/angular.js" type="text/javascript"></script>
 </head>
 <body>
-    <div ng-controller="areaController" ng-switch="model.area">
+    <div ng-controller="areaController" ng-switch="model.area" ng-cloak>
         <div ng-switch-default>
             <h3>Великое ничто!</h3>
             <div>
@@ -77,7 +78,6 @@
     </div>
 
 
-    <script src="Scripts/angular.js" type="text/javascript"></script>
 
     <script type="text/javascript">
         var __app = angular.module('bridgeitApp', []);
@@ -320,7 +320,9 @@
 
             };
             this.leave = function () { };
-            this.enter = function () { };
+            this.enter = function () {
+                socketConnection.send({ area: "bridgeit", type: "getRoomState", sessionId: Bag.getItem("sessionId") });
+            };
         }]);
 
         __app.controller('bridgeitAreaController', ['$scope', 'bridgeitStateService', function ($scope, bridgeitStateService) {

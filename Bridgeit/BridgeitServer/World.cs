@@ -43,7 +43,7 @@ namespace BridgeitServer
         public int lastRoomId;
         public int GetNextRoomId()
         {
-            return ++lastPlayerId;
+            return ++lastRoomId;
         }
 
         public GameServer()
@@ -267,8 +267,15 @@ namespace BridgeitServer
 
             if (inbox.type == "getRoomState")
             {
-                connection.Send(JsonConvert.SerializeObject(new int[10,2]));
+                var room = Rep.Rooms.Values.FirstOrDefault(x => x.OwnerId == connection.Session.PlayerId || x.OppnentId == connection.Session.PlayerId);
+                if (room == null)
+                {
+                    //Пошёл отсюда, давай давай!
+                    connection.Session.Area = "rooms";
+                    connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = connection.Session.Area });
+                }
 
+                connection.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomState", room));
             }
         }
     }
@@ -287,14 +294,18 @@ namespace BridgeitServer
         public readonly int OwnerId;
         public readonly int OppnentId;
 
-        //Время на ход
+        /// <summary>Время на ход</summary>
+
         public readonly int StepTime;
         public readonly int FieldSize;
 
         //Кто сейчас ходит
-        public int activeId;
+        public int ActiveId;
         //Номер хода
-        public int step;
+        public int StepNo;
+        //Время последнего хода
+        public DateTime LastStep;
+        public readonly byte[,] Field;
 
         public BridgeitRoom(int roomId, RoomSettings settings, int ownerId, int oppnentId)
         {
@@ -303,8 +314,20 @@ namespace BridgeitServer
             OppnentId = oppnentId;
             StepTime = 30;
             FieldSize = settings.Size;
+            Field = new byte[FieldSize * 2 - 1, FieldSize * 2 - 1];
+            LastStep = DateTime.Now;
 
+            var r = new Random();
+            for (int y = 0; y < FieldSize * 2 - 1; ++y)
+            {
+                for (int x = 0; x < FieldSize * 2 - 1; ++x)
+                {
+                    if( (x + y) %2 != 0)
+                        continue;
 
+                    Field[y, x] = (byte)r.Next(3);
+                }
+            }
         }
     }
 

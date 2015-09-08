@@ -73,7 +73,9 @@
             </div>
         </div>
         <div ng-switch-when="bridgeit" ng-controller="bridgeitAreaController">
-            Да, ты в игре
+            <div>Игра №{{model.bridgeitId}}</div>
+            <div>{{model.ownerId}} vs {{model.opponentId}}</div>
+            <bridgeit-field field="model.state.field" />
         </div>
     </div>
 
@@ -193,7 +195,9 @@
             this.onMessage = function (evt) {
                 console.log( evt.data );
                 if (that.handler !== null) {
-                    $rootScope.$apply(function(){that.handler(JSON.parse(evt.data))});
+                    $rootScope.$apply(function() {
+                        that.handler(JSON.parse(evt.data));
+                    });
                 }
             };
 
@@ -317,7 +321,10 @@
             this.model = {};
             
             this.route = function (data) {
-
+                if (data.type === 'setRoomState') {
+                    angular.extend(this.model, data);
+                    this.model.field = data.state.field;
+                }
             };
             this.leave = function () { };
             this.enter = function () {
@@ -329,10 +336,124 @@
             console.log('bridgeitAreaController created');
 
             $scope.model = bridgeitStateService.model;
-
-            $scope.viewModel = {};
         }]);
 
+        __app.directive('bridgeitField', function () {
+            return {
+                restrict: 'E',
+                template: '<canvas>Браузер не может в канвас</canvas>',
+                replace: true,
+                scope: {
+                    field: '='
+                },
+                // наблюдение и манипулирование DOM
+                link: function($scope, element, attrs) {
+                    var canvas = element[0];
+                    var context = canvas.getContext('2d');
+
+                    element.on('click', function(e) {
+                        //var __rect = getOffsetRect(canvas);
+                        //var xpos = e.clientX - __rect.left;
+                        //var ypos = e.clientY - __rect.top;
+
+                        //$scope.$apply(function() {
+                        //    $scope.field[Math.floor(ypos / 50)][Math.floor(xpos / 50)] = 1;
+                        //});
+
+                    });
+
+                    $scope.$watch('field', function (value) {
+                        if (!$scope.field)
+                            return;
+
+                        context.fillStyle = 'white';
+                        context.fillRect(0, 0, canvas.width, canvas.height);
+                        context.fillRect(0, 0, canvas.width, canvas.height);
+
+                        context.lineCap = 'round';
+                        for (var x = 0; x < $scope.field.length; ++x)
+                            for (var y = 0; y < $scope.field.length; ++y) {
+                                if ((x + y) % 2 == 1) {
+                                    continue;
+                                }
+
+                                if ($scope.field[y][x] == 0) {
+                                    context.lineWidth = 4;
+                                    context.strokeStyle = (y % 2 == 1) ? '#ccccff' : '#ffcccc';
+                                    context.setLineDash([15, 8]);
+
+                                    context.beginPath();
+                                    context.moveTo((x + 0) * 50 + 8, (y + 1) * 50);
+                                    context.lineTo((x + 2) * 50 - 8, (y + 1) * 50);
+                                    context.stroke();
+
+                                    context.strokeStyle = (y % 2 == 0) ? '#ccccff' : '#ffcccc';
+                                    context.beginPath();
+                                    context.moveTo((x + 1) * 50, (y + 0) * 50 + 8);
+                                    context.lineTo((x + 1) * 50, (y + 2) * 50 - 8);
+                                    context.stroke();
+                                    continue;
+                                }
+
+                                context.lineWidth = 6;
+                                context.strokeStyle = ($scope.field[y][x] == 1) ? '#ff0000' : '#0000ff';
+                                context.setLineDash([]);
+
+                                context.beginPath();
+                                if ($scope.field[y][x] == 1 && y % 2 == 0 || $scope.field[y][x] == 2 && y % 2 == 1) {
+                                    context.moveTo(x * 50, (y + 1) * 50);
+                                    context.lineTo((x + 2) * 50, (y + 1) * 50);
+                                }
+                                else {
+                                    context.moveTo((x + 1) * 50, (y + 0) * 50);
+                                    context.lineTo((x + 1) * 50, (y + 2) * 50);
+                                }
+                                context.stroke();
+                            }
+
+                        for (var x = 0; x < $scope.field.length; ++x)
+                            for (var y = 0; y < $scope.field.length; ++y) {
+                                if ((x + y) % 2 == 1) {
+                                    context.strokeStyle = (y % 2 == 0) ? '#ff0000' : '#0000ff';
+                                    context.setLineDash([]);
+                                    context.lineWidth = 6;
+                                    context.beginPath();
+                                    context.arc((x + 1) * 50, (y + 1) * 50, 2, 0, Math.PI * 2, true);
+                                    context.stroke();
+
+                                    continue;
+                                }
+                            }
+
+
+                    }, true);
+                },
+            };
+        });
+
+        function getOffsetRect(elem) {
+            //http://javascript.ru/ui/offset
+            // (1)
+            var box = elem.getBoundingClientRect();
+
+            // (2)
+            var body = document.body;
+            var docElem = document.documentElement;
+
+            // (3)
+            var scrollTop = window.pageYOffset || docElem.scrollTop || body.scrollTop;
+            var scrollLeft = window.pageXOffset || docElem.scrollLeft || body.scrollLeft;
+
+            // (4)
+            var clientTop = docElem.clientTop || body.clientTop || 0;
+            var clientLeft = docElem.clientLeft || body.clientLeft || 0;
+
+            // (5)
+            var top = box.top + scrollTop - clientTop;
+            var left = box.left + scrollLeft - clientLeft;
+
+            return { top: Math.round(top), left: Math.round(left) };
+        }
     </script>
 </body>
 </html>

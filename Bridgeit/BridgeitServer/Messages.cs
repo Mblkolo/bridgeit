@@ -51,6 +51,21 @@ namespace BridgeitServer
         public int stepTime;
         public int fieldSize;
         public BridgeitStateDTO state;
+
+        public static BridgeitOutboxMessage Convert(string area, string type, BridgeitRoom room)
+        {
+            return new BridgeitOutboxMessage
+            {
+                area = area,
+                type = type,
+                bridgeitId = room.Id,
+                ownerId = room.OwnerId,
+                opponentId = room.OppnentId,
+                stepTime = room.StepTime,
+                fieldSize = room.FieldSize,
+                state = BridgeitStateDTO.Convert(room)
+            };
+        }
     }
 
     class BridgeitStateDTO
@@ -60,6 +75,18 @@ namespace BridgeitServer
         public int timeout;
         /// <summary>Кто ходит</summary>
         public int activeId;
+        public int stepNo;
+
+        public static BridgeitStateDTO Convert(BridgeitRoom room)
+        {
+            return new BridgeitStateDTO
+            {
+                activeId = room.ActiveId,
+                field = room.Field,
+                timeout = Math.Max(0, room.StepTime * 1000 - (int)Math.Floor((DateTime.Now - room.LastStep).TotalMilliseconds)),
+                stepNo = room.StepNo
+            };
+        }
     }
 
     class RoomSettingsDto

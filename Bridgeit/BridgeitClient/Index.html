@@ -314,7 +314,7 @@
             };
         }]);
 
-        __app.service('bridgeitStateService', ['socketConnection', function (socketConnection) {
+        __app.service('bridgeitStateService', ['socketConnection', '$interval', function (socketConnection, $interval) {
             console.log('bridgeitStateService created');
 
             var me = this;
@@ -323,16 +323,30 @@
             
             this.route = function (data) {
                 if (data.type === 'setRoomSettings') {
-                    this.model.settings = data.settings;
-                    this.model.state = data.state;
+                    if (me.model.state)
+                        console.log(me.model.state.timeout);
+
+                    me.model.settings = data.settings;
+                    me.model.state = data.state;
                 }
                 if (data.type === 'setRoomState') {
-                    this.model.state = data.state;
+                    if (me.model.state)
+                        console.log(me.model.state.timeout)
+
+                    me.model.state = data.state;
                 }
             };
             this.leave = function () { };
             this.enter = function () {
                 socketConnection.send({ area: "bridgeit", type: "getRoomState", sessionId: Bag.getItem("sessionId") });
+                var startTime = new Date().getTime();
+                $interval(function () {
+                    var nowTime = new Date().getTime();
+                    if (me.model.state)
+                        me.model.state.timeout -= (nowTime - startTime);
+
+                    startTime = nowTime;
+                }, 100);
             };
         }]);
 

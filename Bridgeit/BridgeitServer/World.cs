@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Fleck;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 
 namespace BridgeitServer
 {
@@ -275,7 +276,7 @@ namespace BridgeitServer
                     connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = connection.Session.Area });
                 }
 
-                connection.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomState", room));
+                connection.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomSettings", room));
             }
         }
     }
@@ -288,6 +289,13 @@ namespace BridgeitServer
         public string Area;
     }
 
+    public enum BridgeitRoomPhase
+    {
+        wait,
+        game,
+        completed
+    }
+
     internal class BridgeitRoom
     {
         public readonly int Id;
@@ -295,17 +303,21 @@ namespace BridgeitServer
         public readonly int OppnentId;
 
         /// <summary>Время на ход</summary>
-
+        public readonly int WaitTime = 5;
         public readonly int StepTime;
         public readonly int FieldSize;
+
+        public BridgeitRoomPhase Phase;
 
         //Кто сейчас ходит
         public int ActiveId;
         //Номер хода
         public int StepNo;
-        //Время последнего хода
-        public DateTime LastStep;
+
+        //Время последнего действия
+        public DateTime LastActive;
         public readonly byte[,] Field;
+        
 
         public BridgeitRoom(int roomId, RoomSettings settings, int ownerId, int oppnentId)
         {
@@ -315,7 +327,7 @@ namespace BridgeitServer
             StepTime = 30;
             FieldSize = settings.Size;
             Field = new byte[FieldSize * 2 - 1, FieldSize * 2 - 1];
-            LastStep = DateTime.Now;
+            LastActive = DateTime.Now;
 
             var r = new Random();
             for (int y = 0; y < FieldSize * 2 - 1; ++y)
@@ -328,6 +340,21 @@ namespace BridgeitServer
                     Field[y, x] = (byte)r.Next(3);
                 }
             }
+        }
+
+        /// <summary>
+        /// Миллисекунд до таймаута
+        /// </summary>
+        /// <returns></returns>
+        public int GetTimeout()
+        {
+            var timeout = 0;
+            if (Phase == BridgeitRoomPhase.wait)
+                timeout = WaitTime;
+            if (Phase == BridgeitRoomPhase.game)
+                timeout = StepTime;
+
+            return Math.Max(0, timeout*1000 - (int) Math.Round((DateTime.Now - LastActive).TotalMilliseconds));
         }
     }
 

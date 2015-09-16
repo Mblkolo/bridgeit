@@ -73,9 +73,10 @@
             </div>
         </div>
         <div ng-switch-when="bridgeit" ng-controller="bridgeitAreaController">
-            <div>Игра №{{model.bridgeitId}}</div>
-            <div>{{model.ownerId}} vs {{model.opponentId}}</div>
-            <bridgeit-field field="model.state.field" />
+            <div>Игра №{{model.settings.bridgeitId}}</div>
+            <div>{{model.settings.ownerId}} vs {{model.settings.opponentId}}</div>
+            <div>phase {{model.state.phase}} timeout {{model.state.timeout}}</div>
+            <bridgeit-field field="model.state.field" width="800" height="800" />
         </div>
     </div>
 
@@ -321,9 +322,12 @@
             this.model = {};
             
             this.route = function (data) {
+                if (data.type === 'setRoomSettings') {
+                    this.model.settings = data.settings;
+                    this.model.state = data.state;
+                }
                 if (data.type === 'setRoomState') {
-                    angular.extend(this.model, data);
-                    this.model.field = data.state.field;
+                    this.model.settings = data.settings;
                 }
             };
             this.leave = function () { };
@@ -341,10 +345,12 @@
         __app.directive('bridgeitField', function () {
             return {
                 restrict: 'E',
-                template: '<canvas>Браузер не может в канвас</canvas>',
+                template: '<canvas width="{{width}}" height="{{height}}">Браузер не может в канвас</canvas>',
                 replace: true,
                 scope: {
-                    field: '='
+                    field: '=',
+                    width: '@',
+                    height: '@',
                 },
                 // наблюдение и манипулирование DOM
                 link: function($scope, element, attrs) {

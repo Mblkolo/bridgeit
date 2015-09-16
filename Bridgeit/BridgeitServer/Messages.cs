@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Fleck;
 
@@ -44,12 +45,7 @@ namespace BridgeitServer
 
     class BridgeitOutboxMessage : OutboxMessage
     {
-        public int bridgeitId;
-        public int ownerId;
-        public int opponentId;
-        /// <summary>Время на ход в секундах</summary>
-        public int stepTime;
-        public int fieldSize;
+        public BridgeitSettingsDTO settings;
         public BridgeitStateDTO state;
 
         public static BridgeitOutboxMessage Convert(string area, string type, BridgeitRoom room)
@@ -58,12 +54,30 @@ namespace BridgeitServer
             {
                 area = area,
                 type = type,
+                settings = BridgeitSettingsDTO.Convert(room),
+                state = BridgeitStateDTO.Convert(room)
+            };
+        }
+    }
+
+    class BridgeitSettingsDTO
+    {
+        public int bridgeitId;
+        public int ownerId;
+        public int opponentId;
+        /// <summary>Время на ход в секундах</summary>
+        public int stepTime;
+        public int fieldSize;
+
+        public static BridgeitSettingsDTO Convert(BridgeitRoom room)
+        {
+            return new BridgeitSettingsDTO
+            {
                 bridgeitId = room.Id,
                 ownerId = room.OwnerId,
                 opponentId = room.OppnentId,
                 stepTime = room.StepTime,
                 fieldSize = room.FieldSize,
-                state = BridgeitStateDTO.Convert(room)
             };
         }
     }
@@ -73,9 +87,12 @@ namespace BridgeitServer
         //Игровое поле, всегда квадратное
         public byte[,] field;
         public int timeout;
-        /// <summary>Кто ходит</summary>
+        /// <summary>Кто ходит, в случае окончания ид победителя или 0</summary>
         public int activeId;
         public int stepNo;
+
+        //wait, game, completed
+        public BridgeitRoomPhase phase;
 
         public static BridgeitStateDTO Convert(BridgeitRoom room)
         {
@@ -83,8 +100,9 @@ namespace BridgeitServer
             {
                 activeId = room.ActiveId,
                 field = room.Field,
-                timeout = Math.Max(0, room.StepTime * 1000 - (int)Math.Floor((DateTime.Now - room.LastStep).TotalMilliseconds)),
-                stepNo = room.StepNo
+                timeout = room.GetTimeout(),
+                stepNo = room.StepNo,
+                phase = room.Phase
             };
         }
     }

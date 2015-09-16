@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Converters;
 
 namespace BridgeitServer
 {
@@ -13,6 +14,14 @@ namespace BridgeitServer
     {
         static void Main(string[] args)
         {
+            JsonConvert.DefaultSettings = (() =>
+            {
+                var settings = new JsonSerializerSettings();
+                settings.Converters.Add(new StringEnumConverter { CamelCaseText = true });
+                return settings;
+            });
+
+
             FleckLog.Level = LogLevel.Debug;
             var server = new WebSocketServer("ws://0.0.0.0:8181");
 

@@ -2,11 +2,9 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Threading;
 using Fleck;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace BridgeitServer
 {
@@ -274,10 +272,46 @@ namespace BridgeitServer
                     //Пошёл отсюда, давай давай!
                     connection.Session.Area = "rooms";
                     connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = connection.Session.Area });
+                    return;
                 }
 
                 connection.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomSettings", room));
+                
+                //Замыкания опасны
+                var roomId = room.Id;
+                var stepNo = room.StepNo;
+                room.Timeout(() => SingleThread.Put(() => OnBrigeitGameTimeOut(roomId, stepNo)));
             }
+        }
+
+        private void OnBrigeitGameTimeOut(int inRoomId, int inStepNo)
+        {
+            if (!Rep.Rooms.ContainsKey(inRoomId))
+                return;
+
+            var room = Rep.Rooms[inRoomId];
+            if (room.StepNo != inStepNo)
+                return;
+
+            if (room.Phase == BridgeitRoomPhase.wait)
+                room.Phase = BridgeitRoomPhase.game;
+
+            var ownerSession = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == room.OwnerId);
+            var opponentSession = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == room.OppnentId);
+            if (ownerSession == null && opponentSession == null)
+                Rep.Rooms.Remove(inRoomId);
+
+            room.StepNo++;
+            room.LastActive = DateTime.Now;
+            var roomId = room.Id;
+            var stepNo = room.StepNo;
+            room.Timeout(() => OnBrigeitGameTimeOut(roomId, stepNo));
+
+            if(ownerSession != null)
+                ownerSession.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomState", room));
+
+            if (opponentSession != null)
+                opponentSession.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomState", room));
         }
     }
 
@@ -354,7 +388,17 @@ namespace BridgeitServer
             if (Phase == BridgeitRoomPhase.game)
                 timeout = StepTime;
 
-            return Math.Max(0, timeout*1000 - (int) Math.Round((DateTime.Now - LastActive).TotalMilliseconds));
+            var result = Math.Max(0, timeout*1000 - (int) Math.Round((DateTime.Now - LastActive).TotalMilliseconds));
+            return result;
+        }
+
+        private Timer timer;
+        public void Timeout(Action timeoutAction)
+        {
+            if (timer != null)
+                timer.Dispose();
+
+            timer = new Timer(o => timeoutAction(), null, GetTimeout(), 0);
         }
     }
 

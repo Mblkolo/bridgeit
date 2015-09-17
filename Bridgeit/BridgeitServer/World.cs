@@ -282,6 +282,52 @@ namespace BridgeitServer
                 var stepNo = room.StepNo;
                 room.Timeout(() => SingleThread.Put(() => OnBrigeitGameTimeOut(roomId, stepNo)));
             }
+
+            if (inbox.type == "executeAction")
+            {
+                var room = Rep.Rooms.Values.FirstOrDefault(x => x.OwnerId == connection.Session.PlayerId || x.OppnentId == connection.Session.PlayerId);
+                if (room == null || room.Phase != BridgeitRoomPhase.game)
+                {
+                    return;
+                }
+
+                var action = JsonConvert.DeserializeObject<PlayeerActonDTO>(inbox.value);
+                if (action.stepNo != room.StepNo)
+                    return;
+
+                if (action.x < 0 || action.x >= room.FieldSize * 2 - 1)
+                    return;
+                
+                if (action.y < 0 || action.y >= room.FieldSize * 2 - 1)
+                    return;
+
+                if ((action.x + action.y) % 2 != 0)
+                    return;
+
+
+                if (room.Field[action.y, action.x] != 0)
+                    return;
+
+                var mark = connection.Session.PlayerId == room.OwnerId ? 1 : 2;
+                room.Field[action.y, action.x] = (byte)mark;
+
+                //TODO проверить, не завершилась ли игра
+
+                room.ActiveId = room.ActiveId == room.OwnerId ? room.OppnentId : room.OwnerId;
+                room.StepNo++;
+                room.LastActive = DateTime.Now;
+                var roomId = room.Id;
+                var stepNo = room.StepNo;
+                room.Timeout(() => OnBrigeitGameTimeOut(roomId, stepNo));
+
+                var ownerSession = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == room.OwnerId);
+                var opponentSession = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == room.OppnentId);
+                if (ownerSession != null)
+                    ownerSession.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomState", room));
+
+                if (opponentSession != null)
+                    opponentSession.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomState", room));
+            }
         }
 
         private void OnBrigeitGameTimeOut(int inRoomId, int inStepNo)
@@ -294,13 +340,18 @@ namespace BridgeitServer
                 return;
 
             if (room.Phase == BridgeitRoomPhase.wait)
+            {
+                room.ActiveId = room.OwnerId;
                 room.Phase = BridgeitRoomPhase.game;
+            }
 
             var ownerSession = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == room.OwnerId);
             var opponentSession = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == room.OppnentId);
             if (ownerSession == null && opponentSession == null)
-                Rep.Rooms.Remove(inRoomId);
+                Rep.Rooms.Remove(inRoomId); //TODO придумать другую процедура завершения игры
 
+            //Просто передаём ход
+            room.ActiveId = room.ActiveId == room.OwnerId ? room.OppnentId : room.OwnerId;
             room.StepNo++;
             room.LastActive = DateTime.Now;
             var roomId = room.Id;
@@ -371,7 +422,7 @@ namespace BridgeitServer
                     if( (x + y) %2 != 0)
                         continue;
 
-                    Field[y, x] = (byte)r.Next(3);
+                    //Field[y, x] = (byte)r.Next(3);
                 }
             }
         }

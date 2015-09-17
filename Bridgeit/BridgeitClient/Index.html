@@ -76,7 +76,7 @@
             <div>Игра №{{model.settings.bridgeitId}}</div>
             <div>{{model.settings.ownerId}} vs {{model.settings.opponentId}}</div>
             <div>phase {{model.state.phase}} timeout {{model.state.timeout}}</div>
-            <bridgeit-field field="model.state.field" width="800" height="800" />
+            <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="800" height="800" />
         </div>
     </div>
 
@@ -320,6 +320,20 @@
             var me = this;
             this.area = 'bridgeit';
             this.model = {};
+            this.model.onClick = function (y, x)
+            {
+                var __playerId = Bag.getItem('playerId');
+                if (!me.model.state || me.model.state.activeId != __playerId)
+                    return;
+
+                console.log(y, x, __playerId, me.model.state.activeId);
+                socketConnection.send({
+                    area: me.area,
+                    sessionId: Bag.getItem("sessionId"),
+                    type: 'executeAction',
+                    value: JSON.stringify({ x: x, y: y, stepNo: me.model.state.stepNo })
+                });
+            }
             
             this.route = function (data) {
                 if (data.type === 'setRoomSettings') {
@@ -363,6 +377,7 @@
                 replace: true,
                 scope: {
                     field: '=',
+                    cellClick: '&',
                     width: '@',
                     height: '@',
                 },
@@ -372,14 +387,37 @@
                     var context = canvas.getContext('2d');
 
                     element.on('click', function(e) {
-                        //var __rect = getOffsetRect(canvas);
-                        //var xpos = e.clientX - __rect.left;
-                        //var ypos = e.clientY - __rect.top;
+                        var __rect = getOffsetRect(canvas);
+                        var x = e.clientX - __rect.left;
+                        var y = e.clientY - __rect.top;
 
-                        //$scope.$apply(function() {
-                        //    $scope.field[Math.floor(ypos / 50)][Math.floor(xpos / 50)] = 1;
-                        //});
+                        var xx = Math.floor(x / 100);
+                        var yy = Math.floor(y / 100);
 
+                        var xxx = Math.floor((x - 50) / 100);
+                        var yyy = Math.floor((y - 50) / 100);
+
+                        var point;
+                        var field = $scope.field;
+                        if (Math.abs(xx * 100 + 50 - x) + Math.abs(yy * 100 + 50 - y) < 50)
+                            if (xx >= 0 && yy >= 0 && xx <= field.length / 2 && yy <= field.length / 2)
+                                if (field[2 * yy][2 * xx] == 0) {
+                                    point = {x: 2*xx, y: 2*yy};
+                                }
+
+                        if (Math.abs(xxx * 100 + 100 - x) + Math.abs(yyy * 100 + 100 - y) < 50)
+                            if (xxx >= 0 && yyy >= 0 && xxx <= field.length / 2 && yyy <= field.length / 2)
+                                if (field[1 + 2 * yyy][1 + 2 * xxx] == 0) {
+                                    point = { x: 1 + 2 * xxx, y: 1 + 2 * yyy };
+                                }
+
+                        if (point && $scope.cellClick)
+                        {
+                            $scope.$apply(function () {
+                                $scope.cellClick(point)
+                            });
+                        }
+                        
                     });
 
                     $scope.$watch('field', function (value) {

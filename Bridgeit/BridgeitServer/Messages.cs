@@ -159,4 +159,11 @@ namespace BridgeitServer
         }
 
     }
+
+    class PlayeerActonDTO
+    {
+        public int x;
+        public int y;
+        public int stepNo;
+    }
 }

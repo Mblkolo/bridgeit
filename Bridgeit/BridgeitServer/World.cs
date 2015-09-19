@@ -50,10 +50,10 @@ namespace BridgeitServer
             SingleThread = new SingleThreadWorker<Action>(new SimpleSingleThread());
             SingleThread.Start();
         }
-        
+
         public void ConfigureConnection(IWebSocketConnection connection)
         {
-            var __proxy = new ConnectionProxy(connection, SingleThread) {Handler = this};
+            var __proxy = new ConnectionProxy(connection, SingleThread) { Handler = this };
             Rep.AnonimConnections.Add(__proxy.Id, __proxy);
         }
 
@@ -146,9 +146,9 @@ namespace BridgeitServer
                 connection.Session = null;
                 Rep.SessionConnections.Remove(connectionId);
 
-                
+
                 //Rep.LostSessions.Add(connection.Se Id, connection.Session);
-                
+
 
                 //TODO отключить таки игрока
 
@@ -165,7 +165,7 @@ namespace BridgeitServer
             if (!Rep.SessionConnections.ContainsKey(connectionId))
                 return;
 
-            if(inbox.type == "login")
+            if (inbox.type == "login")
             {
                 var __userName = inbox.value;
                 //1. Проверить пользователей с таким имененем
@@ -198,7 +198,7 @@ namespace BridgeitServer
             if (connection.Session.Area != "rooms")
                 return;
 
-            if(inbox.type == "getAllRooms")
+            if (inbox.type == "getAllRooms")
             {
                 var settings = Rep.RoomsSettings.Where(x => !x.Value.IsDisabled).ToDictionary(x => x.Key, x => x.Value);
                 var outbox = new RoomSettingsOutboxMessage("rooms", "updateRoomList", settings);
@@ -213,7 +213,7 @@ namespace BridgeitServer
 
                 Rep.RoomsSettings[connection.Session.PlayerId] = __newSettings;
                 var outbox = new RoomSettingsOutboxMessage("rooms", "updateRoomList", __newSettings.Id, __newSettings);
-                foreach(var anyConnection in Rep.SessionConnections.Values)
+                foreach (var anyConnection in Rep.SessionConnections.Values)
                     anyConnection.Send(outbox);
 
                 return;
@@ -226,7 +226,7 @@ namespace BridgeitServer
                         anyConnection.Send(new RoomSettingsOutboxMessage("rooms", "updateRoomList", connection.Session.PlayerId, null));
             }
 
-            if(inbox.type == "joinToRoom")
+            if (inbox.type == "joinToRoom")
             {
                 int opponentId;
                 if (!int.TryParse(inbox.value, out opponentId))
@@ -276,7 +276,7 @@ namespace BridgeitServer
                 }
 
                 connection.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomSettings", room));
-                
+
                 //Замыкания опасны
                 var roomId = room.Id;
                 var stepNo = room.StepNo;
@@ -297,7 +297,7 @@ namespace BridgeitServer
 
                 if (action.x < 0 || action.x >= room.FieldSize * 2 - 1)
                     return;
-                
+
                 if (action.y < 0 || action.y >= room.FieldSize * 2 - 1)
                     return;
 
@@ -358,7 +358,7 @@ namespace BridgeitServer
             var stepNo = room.StepNo;
             room.Timeout(() => OnBrigeitGameTimeOut(roomId, stepNo));
 
-            if(ownerSession != null)
+            if (ownerSession != null)
                 ownerSession.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomState", room));
 
             if (opponentSession != null)
@@ -402,7 +402,7 @@ namespace BridgeitServer
         //Время последнего действия
         public DateTime LastActive;
         public readonly byte[,] Field;
-        
+
 
         public BridgeitRoom(int roomId, RoomSettings settings, int ownerId, int oppnentId)
         {
@@ -419,7 +419,7 @@ namespace BridgeitServer
             {
                 for (int x = 0; x < FieldSize * 2 - 1; ++x)
                 {
-                    if( (x + y) %2 != 0)
+                    if ((x + y) % 2 != 0)
                         continue;
 
                     //Field[y, x] = (byte)r.Next(3);
@@ -439,7 +439,7 @@ namespace BridgeitServer
             if (Phase == BridgeitRoomPhase.game)
                 timeout = StepTime;
 
-            var result = Math.Max(0, timeout*1000 - (int) Math.Round((DateTime.Now - LastActive).TotalMilliseconds));
+            var result = Math.Max(0, timeout * 1000 - (int)Math.Round((DateTime.Now - LastActive).TotalMilliseconds));
             return result;
         }
 
@@ -451,6 +451,81 @@ namespace BridgeitServer
 
             timer = new Timer(o => timeoutAction(), null, GetTimeout(), 0);
         }
+
+        //Наиваная реализация, без оптимизаций
+        public static bool CheckPath(BridgeitRoom room)
+        {
+            var candidats = new Stack<Ceil>();
+            var field = room.Field;
+            var maxSize = room.FieldSize * 2 - 1;
+            for (int y = 0; y < maxSize; y += 2)
+            {
+                if (field[y, 0] == 1)
+                {
+                    candidats.Push(new Ceil(y, 0));
+                    field[y, 0] = 3;
+                }
+            }
+
+            while (candidats.Count > 0)
+            {
+                var ceil = candidats.Pop();
+                //проверки в 8 сторон, это всегда так _весело_
+                var directions = new Ceil[] {
+                    new Ceil(ceil.Y - 2, ceil.X + 0),
+                    new Ceil(ceil.Y - 1, ceil.X + 1),
+                    new Ceil(ceil.Y + 0, ceil.X + 2),
+                    new Ceil(ceil.Y + 1, ceil.X + 1),
+                    new Ceil(ceil.Y + 2, ceil.X + 0),
+                    new Ceil(ceil.Y + 1, ceil.X - 1),
+                    new Ceil(ceil.Y + 0, ceil.X - 2),
+                    new Ceil(ceil.Y - 1, ceil.X - 1)
+                };
+
+                for (int i = 0; i < directions.Length; ++i )
+                {
+                    var dir = directions[i];
+                    if(dir.X >= 0 && dir.X < maxSize && dir.Y >= 0 && dir.Y < maxSize && field[dir.Y, dir.X] == 1) 
+                    {
+                        candidats.Push(dir);
+                        field[dir.Y, dir.X] = 3;
+                    }
+                }
+            }
+
+            bool isSuccess = false;
+            for(int y=0; y<maxSize; y+=2)
+            {
+                if(field[y, maxSize-1] == 3)
+                {
+                    isSuccess = true;
+                    break;
+                }
+            }
+
+            for (int y = 0; y < maxSize; ++y)
+            {
+                for (int x = 0; x < maxSize; ++x)
+                {
+                    if (field[y, x] == 3)
+                        field[y, x] = 1;
+                }
+            }
+
+            return isSuccess;
+        }
+    }
+
+    public struct Ceil
+    {
+        public readonly int X;
+        public readonly int Y;
+
+        public Ceil(int y, int x)
+        {
+            Y = y;
+            X = x;
+        }
     }
 
     internal class GameRepository
@@ -460,7 +535,7 @@ namespace BridgeitServer
 
         //Будет специальный сервис, кторый будет убивать потерянные сессии по таймауту
         public readonly Dictionary<Guid, PlayerSession> LostSessions = new Dictionary<Guid, PlayerSession>();
-            
+
         //Все комнаты доступные для игры
         public IDictionary<int, RoomSettings> RoomsSettings = new Dictionary<int, RoomSettings>();
 

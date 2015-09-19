@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BridgeitServer", "BridgeitS
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BridgeitClient", "BridgeitClient\BridgeitClient.csproj", "{B6022692-927A-4D99-90AE-1E82E9D2D2D7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BridgeitTest", "BridgeitTest\BridgeitTest.csproj", "{C13F1D7D-D6D9-406A-8899-BDE5BEECADB4}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{B6022692-927A-4D99-90AE-1E82E9D2D2D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B6022692-927A-4D99-90AE-1E82E9D2D2D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B6022692-927A-4D99-90AE-1E82E9D2D2D7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C13F1D7D-D6D9-406A-8899-BDE5BEECADB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C13F1D7D-D6D9-406A-8899-BDE5BEECADB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C13F1D7D-D6D9-406A-8899-BDE5BEECADB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C13F1D7D-D6D9-406A-8899-BDE5BEECADB4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

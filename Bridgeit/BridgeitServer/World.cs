@@ -228,26 +228,26 @@ namespace BridgeitServer
 
             if (inbox.type == "joinToRoom")
             {
-                int opponentId;
-                if (!int.TryParse(inbox.value, out opponentId))
+                int ownerId;
+                if (!int.TryParse(inbox.value, out ownerId))
                     return;
 
-                var oppnentConnection = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == opponentId);
-                if (oppnentConnection == null || oppnentConnection.Session.Area != "rooms")
+                var ownerConnection = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == ownerId);
+                if (ownerConnection == null || ownerConnection.Session.Area != "rooms")
                     return;
 
                 RoomSettings settings;
-                if (!Rep.RoomsSettings.TryGetValue(oppnentConnection.Session.PlayerId, out settings))
+                if (!Rep.RoomsSettings.TryGetValue(ownerConnection.Session.PlayerId, out settings))
                     return;
 
-                var room = new BridgeitRoom(GetNextRoomId(), settings, connection.Session.PlayerId, oppnentConnection.Session.PlayerId);
+                var room = new BridgeitRoom(GetNextRoomId(), settings, ownerConnection.Session.PlayerId, connection.Session.PlayerId);
                 Rep.Rooms.Add(room.Id, room);
 
                 connection.Session.Area = "bridgeit";
-                oppnentConnection.Session.Area = "bridgeit";
+                ownerConnection.Session.Area = "bridgeit";
 
                 connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "bridgeit" });
-                oppnentConnection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "bridgeit" });
+                ownerConnection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "bridgeit" });
                 return;
             }
         }

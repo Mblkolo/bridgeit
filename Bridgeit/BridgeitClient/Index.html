@@ -76,7 +76,7 @@
             <div>Игра №{{model.settings.bridgeitId}}</div>
             <div>{{model.settings.ownerId}} vs {{model.settings.opponentId}}</div>
             <div>phase {{model.state.phase}} timeout {{model.state.timeout}}</div>
-            <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="500" height="500" />
+            <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="500" height="500" first-on-top="{{model.isOwner()}}" />
         </div>
     </div>
 
@@ -334,6 +334,14 @@
                     value: JSON.stringify({ x: x, y: y, stepNo: me.model.state.stepNo })
                 });
             }
+            this.model.isOwner = function () {
+                console.log('isOwner');
+                var __playerId = Bag.getItem('playerId');
+                if (me.model.settings)
+                    return me.model.settings.ownerId == __playerId;
+
+                return undefined;
+            }
             
             this.route = function (data) {
                 if (data.type === 'setRoomSettings') {
@@ -378,6 +386,7 @@
                 scope: {
                     field: '=',
                     cellClick: '&',
+                    firstOnTop: '@',
                     width: '@',
                     height: '@',
                 },
@@ -425,7 +434,9 @@
                     });
 
                     $scope.$watch('field', function (value) {
-                        if (!$scope.field)
+                        //debugger;
+                        //console.info($scope.firstOnTop == 'undefined')//, $scope.firstOnTop == true, $scope.firstOnTop == false);
+                        if (!$scope.field)// || !($scope.firstOnTop == true || $scope.firstOnTop == false))
                             return;
 
                         //Принимаем размер игрового поля как 500пх
@@ -440,7 +451,7 @@
                         //Сетка на заднем плане
                         context.lineCap = 'round';
                         context.lineWidth = 2;
-                        context.strokeStyle = '#ccf';
+                        context.strokeStyle = '#ccf';//firstOnTop ? '#ccf' : '#fcc';
                         for (var x = 0; x < $scope.field.length; ++x)
                             for (var y = 0; y < $scope.field.length; ++y) {
                                 if ((x + y) % 2 == 1 || $scope.field[y][x] != 0) {
@@ -503,7 +514,7 @@
                             }
 
                         //Точки в узлах
-                        return
+                        return;
                         for (var x = 0; x < $scope.field.length; ++x)
                             for (var y = 0; y < $scope.field.length; ++y) {
                                 if ((x + y) % 2 == 1) {

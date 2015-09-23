@@ -437,33 +437,56 @@
                         context.fillRect(0, 0, canvas.width, canvas.height);
                         context.fillRect(0, 0, canvas.width, canvas.height);
 
+                        //Сетка на заднем плане
                         context.lineCap = 'round';
+                        context.lineWidth = 2;
+                        context.strokeStyle = '#ccf';
                         for (var x = 0; x < $scope.field.length; ++x)
                             for (var y = 0; y < $scope.field.length; ++y) {
-                                if ((x + y) % 2 == 1) {
+                                if ((x + y) % 2 == 1 || $scope.field[y][x] != 0) {
                                     continue;
                                 }
 
-                                if ($scope.field[y][x] == 0) {
-                                    context.lineWidth = 2;
-                                    //context.setLineDash([cellSize - 4, 4]);
+                                context.beginPath();
+                                if (y % 2 == 1) {
+                                    context.moveTo((x + 0) * cellSize + 0, (y + 1) * cellSize);
+                                    context.lineTo((x + 2) * cellSize - 0, (y + 1) * cellSize);
+                                }
+                                else {
+                                    context.moveTo((x + 1) * cellSize, (y + 0) * cellSize + 0);
+                                    context.lineTo((x + 1) * cellSize, (y + 2) * cellSize - 0);
+                                }
+                                context.stroke();
+                            }
 
-
-                                    context.strokeStyle = (y % 2 == 0) ? '#f99' : '#99f';;
-                                    context.beginPath();
-                                    context.moveTo((x + 0) * cellSize + 2, (y + 1) * cellSize);
-                                    context.lineTo((x + 2) * cellSize - 2, (y + 1) * cellSize);
-                                    context.stroke();
-
-                                    context.strokeStyle = (y % 2 == 1) ? '#f99' : '#99f';;
-                                    context.beginPath();
-                                    context.moveTo((x + 1) * cellSize, (y + 0) * cellSize + 2);
-                                    context.lineTo((x + 1) * cellSize, (y + 2) * cellSize - 2);
-                                    context.stroke();
+                        //Сетка на переднем плане
+                        context.strokeStyle = '#faa';
+                        for (var x = 0; x < $scope.field.length; ++x)
+                            for (var y = 0; y < $scope.field.length; ++y) {
+                                if ((x + y) % 2 == 1 || $scope.field[y][x] != 0) {
                                     continue;
                                 }
 
-                                context.lineWidth = 4;
+                                context.beginPath();
+                                if (y % 2 == 0) {
+                                    context.moveTo((x + 0) * cellSize + 0, (y + 1) * cellSize);
+                                    context.lineTo((x + 2) * cellSize - 0, (y + 1) * cellSize);
+                                }
+                                else {
+                                    context.moveTo((x + 1) * cellSize, (y + 0) * cellSize + 0);
+                                    context.lineTo((x + 1) * cellSize, (y + 2) * cellSize - 0);
+                                }
+                                context.stroke();
+                        }
+
+                        //Ходы
+                        context.lineWidth = 4;
+                        for (var x = 0; x < $scope.field.length; ++x)
+                            for (var y = 0; y < $scope.field.length; ++y) {
+                                if ((x + y) % 2 == 1 || $scope.field[y][x] == 0) {
+                                    continue;
+                                }
+
                                 context.strokeStyle = ($scope.field[y][x] == 1) ? '#f00' : '#00f';;
                                 context.setLineDash([]);
 
@@ -479,6 +502,8 @@
                                 context.stroke();
                             }
 
+                        //Точки в узлах
+                        return
                         for (var x = 0; x < $scope.field.length; ++x)
                             for (var y = 0; y < $scope.field.length; ++y) {
                                 if ((x + y) % 2 == 1) {

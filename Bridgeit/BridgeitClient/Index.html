@@ -76,7 +76,7 @@
             <div>Игра №{{model.settings.bridgeitId}}</div>
             <div>{{model.settings.ownerId}} vs {{model.settings.opponentId}}</div>
             <div>phase {{model.state.phase}} timeout {{model.state.timeout}}</div>
-            <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="800" height="800" />
+            <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="500" height="500" />
         </div>
     </div>
 
@@ -386,26 +386,30 @@
                     var canvas = element[0];
                     var context = canvas.getContext('2d');
 
-                    element.on('click', function(e) {
+                    element.on('click', function (e) {
+                        var width = 500;
+                        var height = 500;
+                        var cellSize = 500 / 10 / 2;
+
                         var __rect = getOffsetRect(canvas);
                         var x = e.clientX - __rect.left;
                         var y = e.clientY - __rect.top;
 
-                        var xx = Math.floor(x / 100);
-                        var yy = Math.floor(y / 100);
+                        var xx = Math.floor(x / (cellSize * 2));
+                        var yy = Math.floor(y / (cellSize * 2));
 
-                        var xxx = Math.floor((x - 50) / 100);
-                        var yyy = Math.floor((y - 50) / 100);
+                        var xxx = Math.floor((x - cellSize) / (cellSize * 2));
+                        var yyy = Math.floor((y - cellSize) / (cellSize * 2));
 
                         var point;
                         var field = $scope.field;
-                        if (Math.abs(xx * 100 + 50 - x) + Math.abs(yy * 100 + 50 - y) < 50)
+                        if (Math.abs(xx * (cellSize * 2) + cellSize - x) + Math.abs(yy * (cellSize * 2) + cellSize - y) < cellSize)
                             if (xx >= 0 && yy >= 0 && xx <= field.length / 2 && yy <= field.length / 2)
                                 if (field[2 * yy][2 * xx] == 0) {
                                     point = {x: 2*xx, y: 2*yy};
                                 }
 
-                        if (Math.abs(xxx * 100 + 100 - x) + Math.abs(yyy * 100 + 100 - y) < 50)
+                        if (Math.abs(xxx * (cellSize * 2) + (cellSize * 2) - x) + Math.abs(yyy * (cellSize * 2) + (cellSize * 2) - y) < cellSize)
                             if (xxx >= 0 && yyy >= 0 && xxx <= field.length / 2 && yyy <= field.length / 2)
                                 if (field[1 + 2 * yyy][1 + 2 * xxx] == 0) {
                                     point = { x: 1 + 2 * xxx, y: 1 + 2 * yyy };
@@ -424,6 +428,11 @@
                         if (!$scope.field)
                             return;
 
+                        //Принимаем размер игрового поля как 500пх
+                        var width = 500;
+                        var height = 500;
+                        var cellSize = 500 / 10 / 2;
+
                         context.fillStyle = 'white';
                         context.fillRect(0, 0, canvas.width, canvas.height);
                         context.fillRect(0, 0, canvas.width, canvas.height);
@@ -436,35 +445,36 @@
                                 }
 
                                 if ($scope.field[y][x] == 0) {
-                                    context.lineWidth = 4;
-                                    context.strokeStyle = (y % 2 == 1) ? '#ccccff' : '#ffcccc';
-                                    context.setLineDash([15, 8]);
+                                    context.lineWidth = 2;
+                                    //context.setLineDash([cellSize - 4, 4]);
 
+
+                                    context.strokeStyle = (y % 2 == 0) ? '#f99' : '#99f';;
                                     context.beginPath();
-                                    context.moveTo((x + 0) * 50 + 8, (y + 1) * 50);
-                                    context.lineTo((x + 2) * 50 - 8, (y + 1) * 50);
+                                    context.moveTo((x + 0) * cellSize + 2, (y + 1) * cellSize);
+                                    context.lineTo((x + 2) * cellSize - 2, (y + 1) * cellSize);
                                     context.stroke();
 
-                                    context.strokeStyle = (y % 2 == 0) ? '#ccccff' : '#ffcccc';
+                                    context.strokeStyle = (y % 2 == 1) ? '#f99' : '#99f';;
                                     context.beginPath();
-                                    context.moveTo((x + 1) * 50, (y + 0) * 50 + 8);
-                                    context.lineTo((x + 1) * 50, (y + 2) * 50 - 8);
+                                    context.moveTo((x + 1) * cellSize, (y + 0) * cellSize + 2);
+                                    context.lineTo((x + 1) * cellSize, (y + 2) * cellSize - 2);
                                     context.stroke();
                                     continue;
                                 }
 
-                                context.lineWidth = 6;
-                                context.strokeStyle = ($scope.field[y][x] == 1) ? '#ff0000' : '#0000ff';
+                                context.lineWidth = 4;
+                                context.strokeStyle = ($scope.field[y][x] == 1) ? '#f00' : '#00f';;
                                 context.setLineDash([]);
 
                                 context.beginPath();
                                 if ($scope.field[y][x] == 1 && y % 2 == 0 || $scope.field[y][x] == 2 && y % 2 == 1) {
-                                    context.moveTo(x * 50, (y + 1) * 50);
-                                    context.lineTo((x + 2) * 50, (y + 1) * 50);
+                                    context.moveTo(x * cellSize, (y + 1) * cellSize);
+                                    context.lineTo((x + 2) * cellSize, (y + 1) * cellSize);
                                 }
                                 else {
-                                    context.moveTo((x + 1) * 50, (y + 0) * 50);
-                                    context.lineTo((x + 1) * 50, (y + 2) * 50);
+                                    context.moveTo((x + 1) * cellSize, (y + 0) * cellSize);
+                                    context.lineTo((x + 1) * cellSize, (y + 2) * cellSize);
                                 }
                                 context.stroke();
                             }
@@ -474,9 +484,9 @@
                                 if ((x + y) % 2 == 1) {
                                     context.strokeStyle = (y % 2 == 0) ? '#ff0000' : '#0000ff';
                                     context.setLineDash([]);
-                                    context.lineWidth = 6;
+                                    context.lineWidth = 4;
                                     context.beginPath();
-                                    context.arc((x + 1) * 50, (y + 1) * 50, 2, 0, Math.PI * 2, true);
+                                    context.arc((x + 1) * cellSize, (y + 1) * cellSize, 2, 0, Math.PI * 2, true);
                                     context.stroke();
 
                                     continue;

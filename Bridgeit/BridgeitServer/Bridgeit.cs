@@ -20,6 +20,8 @@ namespace BridgeitServer
         public readonly int Id;
         public readonly int OwnerId;
         public readonly int OppnentId;
+        public readonly string OwnerName;
+        public readonly string OppnentName;
 
         /// <summary>Время на ход</summary>
         public readonly int WaitTime = 5;
@@ -38,11 +40,14 @@ namespace BridgeitServer
         public readonly byte[,] Field;
 
 
-        public BridgeitRoom(int roomId, RoomSettings settings, int ownerId, int oppnentId)
+        public BridgeitRoom(int roomId, RoomSettings settings, PlayerSession owner, PlayerSession oppnent)
         {
             Id = roomId;
-            OwnerId = ownerId;
-            OppnentId = oppnentId;
+            OwnerId = owner.PlayerId;
+            OppnentId = oppnent.PlayerId;
+            OwnerName = owner.PlayerName;
+            OppnentName = oppnent.PlayerName;
+
             StepTime = 30;
             FieldSize = settings.Size;
             Field = new byte[FieldSize * 2 - 1, FieldSize * 2 - 1];
@@ -82,6 +87,9 @@ namespace BridgeitServer
         {
             if (timer != null)
                 timer.Dispose();
+
+            if (Phase == BridgeitRoomPhase.completed)
+                return;
 
             timer = new Timer(o => timeoutAction(), null, GetTimeout(), 0);
         }

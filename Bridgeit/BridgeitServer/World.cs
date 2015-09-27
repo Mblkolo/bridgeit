@@ -8,17 +8,6 @@ using Newtonsoft.Json;
 
 namespace BridgeitServer
 {
-    class Player
-    {
-        public readonly string Name;
-        public readonly int Id;
-        public Player(string name, int id)
-        {
-            Name = name;
-            Id = id;
-        }
-    }
-
     class RoomSettings
     {
         public int Id;
@@ -240,7 +229,7 @@ namespace BridgeitServer
                 if (!Rep.RoomsSettings.TryGetValue(ownerConnection.Session.PlayerId, out settings))
                     return;
 
-                var room = new BridgeitRoom(GetNextRoomId(), settings, ownerConnection.Session.PlayerId, connection.Session.PlayerId);
+                var room = new BridgeitRoom(GetNextRoomId(), settings, ownerConnection.Session, connection.Session);
                 Rep.Rooms.Add(room.Id, room);
 
                 connection.Session.Area = "bridgeit";
@@ -308,17 +297,33 @@ namespace BridgeitServer
                 if (room.Field[action.y, action.x] != 0)
                     return;
 
-                var mark = connection.Session.PlayerId == room.OwnerId ? 1 : 2;
-                room.Field[action.y, action.x] = (byte)mark;
+                bool isFinish = false;
+                if(connection.Session.PlayerId == room.OwnerId)
+                {
+                    room.Field[action.y, action.x] = 1;
+                    isFinish = BridgeitRoom.CheckHorizontalPath(room);
+                }
+                else
+                {
+                    room.Field[action.y, action.x] = 2;
+                    isFinish = BridgeitRoom.CheckVerticalPath(room);
+                }
 
-                //TODO проверить, не завершилась ли игра
-
-                room.ActiveId = room.ActiveId == room.OwnerId ? room.OppnentId : room.OwnerId;
-                room.StepNo++;
-                room.LastActive = DateTime.Now;
-                var roomId = room.Id;
-                var stepNo = room.StepNo;
-                room.Timeout(() => OnBrigeitGameTimeOut(roomId, stepNo));
+                if (isFinish)
+                {
+                    room.Phase = BridgeitRoomPhase.completed;
+                    room.StepNo++;
+                    room.LastActive = DateTime.Now;
+                }
+                else
+                {
+                    room.ActiveId = room.ActiveId == room.OwnerId ? room.OppnentId : room.OwnerId;
+                    room.StepNo++;
+                    room.LastActive = DateTime.Now;
+                    var roomId = room.Id;
+                    var stepNo = room.StepNo;
+                    room.Timeout(() => OnBrigeitGameTimeOut(roomId, stepNo));
+                }
 
                 var ownerSession = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == room.OwnerId);
                 var opponentSession = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == room.OppnentId);
@@ -339,19 +344,20 @@ namespace BridgeitServer
             if (room.StepNo != inStepNo)
                 return;
 
-            if (room.Phase == BridgeitRoomPhase.wait)
-            {
-                room.ActiveId = room.OwnerId;
-                room.Phase = BridgeitRoomPhase.game;
-            }
-
             var ownerSession = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == room.OwnerId);
             var opponentSession = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == room.OppnentId);
             if (ownerSession == null && opponentSession == null)
                 Rep.Rooms.Remove(inRoomId); //TODO придумать другую процедура завершения игры
 
             //Просто передаём ход
-            room.ActiveId = room.ActiveId == room.OwnerId ? room.OppnentId : room.OwnerId;
+            if (room.Phase == BridgeitRoomPhase.wait)
+            {
+                room.ActiveId = room.OwnerId;
+                room.Phase = BridgeitRoomPhase.game;
+            }
+            else if (room.Phase == BridgeitRoomPhase.game)
+                room.ActiveId = room.ActiveId == room.OwnerId ? room.OppnentId : room.OwnerId;
+
             room.StepNo++;
             room.LastActive = DateTime.Now;
             var roomId = room.Id;

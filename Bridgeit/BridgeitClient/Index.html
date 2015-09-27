@@ -52,7 +52,7 @@
                     <span class="name">Моя игра</span>
                     <span>Размер поля</span>
                     <select ng-model="viewModel.roomSettings.fieldSize">
-                        <option value="7">7х7</option>
+                        <option value="3">3х3</option>
                         <option value="10">10х10</option>
                     </select>
                     <span>Время на ход</span>
@@ -74,8 +74,12 @@
         </div>
         <div ng-switch-when="bridgeit" ng-controller="bridgeitAreaController">
             <div>Игра №{{model.settings.bridgeitId}}</div>
-            <div>{{model.settings.ownerId}} vs {{model.settings.opponentId}}</div>
+            <div>{{model.settings.ownerName}} vs {{model.settings.opponentName}}</div>
             <div>phase {{model.state.phase}} timeout {{model.state.timeout}}</div>
+            <div ng-if="model.state.phase==='completed'">
+                {{model.getWinner()}}
+                <button ng-click="leaveGame()">Завершить игру</button>
+            </div>
             <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="500" height="500" first-on-top="{{model.isOwner()}}" />
         </div>
     </div>
@@ -326,14 +330,27 @@
                 if (!me.model.state || me.model.state.activeId != __playerId)
                     return;
 
-                console.log(y, x, __playerId, me.model.state.activeId);
                 socketConnection.send({
                     area: me.area,
                     sessionId: Bag.getItem("sessionId"),
                     type: 'executeAction',
                     value: JSON.stringify({ x: x, y: y, stepNo: me.model.state.stepNo })
                 });
-            }
+            };
+
+            this.model.getWinner = function () {
+                if(!me.model.state)
+                    return;
+
+                if (me.model.state.activeId == me.model.settings.ownerId)
+                    return me.model.settings.ownerName + " победил";
+
+                if (me.model.state.activeId == me.model.settings.opponentId)
+                    return me.model.settings.opponentName + " победил";
+
+                return "Ничья!";
+            };
+
             this.model.isOwner = function () {
                 console.log('isOwner');
                 var __playerId = Bag.getItem('playerId');
@@ -345,16 +362,10 @@
             
             this.route = function (data) {
                 if (data.type === 'setRoomSettings') {
-                    if (me.model.state)
-                        console.log(me.model.state.timeout);
-
                     me.model.settings = data.settings;
                     me.model.state = data.state;
                 }
                 if (data.type === 'setRoomState') {
-                    if (me.model.state)
-                        console.log(me.model.state.timeout)
-
                     me.model.state = data.state;
                 }
             };
@@ -368,7 +379,7 @@
                         me.model.state.timeout -= (nowTime - startTime);
 
                     startTime = nowTime;
-                }, 100);
+                }, 1000);
             };
         }]);
 

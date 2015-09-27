@@ -65,6 +65,8 @@ namespace BridgeitServer
         public int bridgeitId;
         public int ownerId;
         public int opponentId;
+        public string ownerName;
+        public string opponentName;
         /// <summary>Время на ход в секундах</summary>
         public int stepTime;
         public int fieldSize;
@@ -78,6 +80,8 @@ namespace BridgeitServer
                 opponentId = room.OppnentId,
                 stepTime = room.StepTime,
                 fieldSize = room.FieldSize,
+                ownerName = room.OwnerName,
+                opponentName = room.OppnentName
             };
         }
     }

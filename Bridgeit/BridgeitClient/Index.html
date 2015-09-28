@@ -78,7 +78,7 @@
             <div>phase {{model.state.phase}} timeout {{model.state.timeout}}</div>
             <div ng-if="model.state.phase==='completed'">
                 {{model.getWinner()}}
-                <button ng-click="leaveGame()">Завершить игру</button>
+                <button ng-click="model.leaveGame()">Завершить игру</button>
             </div>
             <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="500" height="500" first-on-top="{{model.isOwner()}}" />
         </div>
@@ -358,6 +358,14 @@
                     return me.model.settings.ownerId == __playerId;
 
                 return undefined;
+            }
+
+            this.model.leaveGame = function () {
+                socketConnection.send({
+                    area: me.area,
+                    sessionId: Bag.getItem("sessionId"),
+                    type: 'leaveGame'
+                });
             }
             
             this.route = function (data) {

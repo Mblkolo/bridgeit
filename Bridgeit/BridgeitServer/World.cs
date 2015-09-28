@@ -270,6 +270,7 @@ namespace BridgeitServer
                 var roomId = room.Id;
                 var stepNo = room.StepNo;
                 room.Timeout(() => SingleThread.Put(() => OnBrigeitGameTimeOut(roomId, stepNo)));
+                return;
             }
 
             if (inbox.type == "executeAction")
@@ -332,6 +333,34 @@ namespace BridgeitServer
 
                 if (opponentSession != null)
                     opponentSession.Send(BridgeitOutboxMessage.Convert("bridgeit", "setRoomState", room));
+
+                return;
+            }
+
+            if (inbox.type == "leaveGame")
+            {
+                var room = Rep.Rooms.Values.FirstOrDefault(x => x.OwnerId == connection.Session.PlayerId || x.OppnentId == connection.Session.PlayerId);
+                if (room == null || room.Phase != BridgeitRoomPhase.completed)
+                    return;
+                
+                //Проверяем что все покинили игру
+                var anotherPlayerId = connection.Session.PlayerId == room.OwnerId ? room.OppnentId : room.OwnerId;
+                var anotherSession = Rep.LostSessions.Values.FirstOrDefault(x => x.PlayerId == anotherPlayerId);
+                if (anotherSession == null)
+                {
+                    var anotherConnection = Rep.SessionConnections.Values.FirstOrDefault(x => x.Session.PlayerId == anotherPlayerId);
+                    if (anotherConnection != null)
+                        anotherSession = anotherConnection.Session;
+                }
+
+                if(anotherSession == null || anotherSession.Area != "bridgeit")
+                {
+                    //TODO прибить таймер
+                    Rep.Rooms.Remove(room.Id);
+                }
+
+                connection.Session.Area = "rooms";
+                connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = connection.Session.Area });
             }
         }
 

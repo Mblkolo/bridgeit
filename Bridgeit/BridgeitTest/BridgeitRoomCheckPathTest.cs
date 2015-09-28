@@ -75,15 +75,13 @@ namespace BridgeitTest
         public void TwoCeilHorizontalExistPath()
         {
             var room = new BridgeitRoom(1, new RoomSettings { Id = 1, Name = "Name", Size = 2 }, player1, player2);
-            room.Field[2, 0] = 1;
-            room.Field[1, 1] = 1;
+            room.Field[0, 0] = 1;
             room.Field[0, 2] = 1;
 
             var pathExist = BridgeitRoom.CheckHorizontalPath(room);
 
             Assert.IsTrue(pathExist);
-            Assert.AreEqual(room.Field[2, 0], 1);
-            Assert.AreEqual(room.Field[1, 1], 1);
+            Assert.AreEqual(room.Field[0, 0], 1);
             Assert.AreEqual(room.Field[0, 2], 1);
         }
 
@@ -91,17 +89,61 @@ namespace BridgeitTest
         public void TwoCeilVerticalExistPath()
         {
             var room = new BridgeitRoom(1, new RoomSettings { Id = 1, Name = "Name", Size = 2 }, player1, player2);
+            room.Field[0, 0] = 2;
             room.Field[2, 0] = 2;
-            room.Field[1, 1] = 2;
-            room.Field[0, 2] = 2;
 
             var pathExist = BridgeitRoom.CheckVerticalPath(room);
 
             Assert.IsTrue(pathExist);
+            Assert.AreEqual(room.Field[0, 0], 2);
             Assert.AreEqual(room.Field[2, 0], 2);
-            Assert.AreEqual(room.Field[1, 1], 2);
-            Assert.AreEqual(room.Field[0, 2], 2);
         }
+
+        [TestMethod]
+        public void ThreeCeilHorizontalFakePath()
+        {
+            //Был баг, из-за которого находились горизонатальные пути
+            var room = new BridgeitRoom(1, new RoomSettings { Id = 1, Name = "Name", Size = 3 }, player1, player2);
+            //__
+            // __
+            room.Field[0, 0] = 1;
+            room.Field[0, 2] = 1;
+            room.Field[2, 2] = 1;
+            room.Field[2, 4] = 1;
+
+            var pathExist = BridgeitRoom.CheckHorizontalPath(room);
+
+            Assert.IsFalse(pathExist);
+            Assert.AreEqual(room.Field[0, 0], 1);
+            Assert.AreEqual(room.Field[0, 2], 1);
+            Assert.AreEqual(room.Field[2, 2], 1);
+            Assert.AreEqual(room.Field[2, 4], 1);
+        }
+
+        [TestMethod]
+        public void ThreeCeilHorizontalNotFakePath()
+        {
+            //Был баг, из-за которого не находится вертикальная часть пути
+            var room = new BridgeitRoom(1, new RoomSettings { Id = 1, Name = "Name", Size = 3 }, player1, player2);
+            // _
+            //  |
+            //  |__
+            room.Field[0, 0] = 1;
+            room.Field[1, 1] = 1;
+            room.Field[3, 1] = 1;
+            room.Field[4, 2] = 1;
+            room.Field[4, 4] = 1;
+
+            var pathExist = BridgeitRoom.CheckHorizontalPath(room);
+
+            Assert.IsTrue(pathExist);
+            Assert.AreEqual(room.Field[0, 0], 1);
+            Assert.AreEqual(room.Field[1, 1], 1);
+            Assert.AreEqual(room.Field[3, 1], 1);
+            Assert.AreEqual(room.Field[4, 2], 1);
+            Assert.AreEqual(room.Field[4, 4], 1);
+        }
+
 
         [TestMethod]
         public void BigSizePath()

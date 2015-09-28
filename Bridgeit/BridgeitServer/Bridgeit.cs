@@ -97,10 +97,11 @@ namespace BridgeitServer
         {
             int maxSize = room.FieldSize * 2 - 1;
             var fiels = room.Field;
-            Func<int, int, byte, byte, bool> trySet = (y, x, oldV, newV) => {
-                if(fiels[y,x] == oldV)
+            Func<int, int, byte, byte, bool> trySet = (y, x, oldV, newV) =>
+            {
+                if (fiels[y, x] == oldV)
                 {
-                    fiels[y,x] = newV;
+                    fiels[y, x] = newV;
                     return true;
                 }
                 return false;
@@ -114,9 +115,9 @@ namespace BridgeitServer
             var fiels = room.Field;
             Func<int, int, byte, byte, bool> trySet = (y, x, oldV, newV) =>
             {
-                if (fiels[y, x] == oldV)
+                if (fiels[x, y] == oldV)
                 {
-                    fiels[y, x] = newV;
+                    fiels[x, y] = newV;
                     return true;
                 }
                 return false;
@@ -137,25 +138,37 @@ namespace BridgeitServer
                 }
             }
 
-            var directions = new Ceil[8];
+            var directions = new Ceil[6];
             while (candidats.Count > 0)
             {
                 var ceil = candidats.Pop();
                 //проверки в 8 сторон, это всегда так _весело_
-                directions[0]= new Ceil(ceil.Y + 0, ceil.X - 2);
-                directions[1]= new Ceil(ceil.Y + 1, ceil.X - 1);
-                directions[2]= new Ceil(ceil.Y - 1, ceil.X - 1);
-                directions[3]= new Ceil(ceil.Y + 2, ceil.X + 0);
-                directions[4]= new Ceil(ceil.Y - 2, ceil.X + 0);
-                directions[5]= new Ceil(ceil.Y + 1, ceil.X + 1);
-                directions[6]= new Ceil(ceil.Y - 1, ceil.X + 1);
-                directions[7]= new Ceil(ceil.Y + 0, ceil.X + 2);
+                if(ceil.Y %2 == 0)
+                {
+                    //Кроме вертикального движения
+                    directions[0] = new Ceil(ceil.Y + 0, ceil.X - 2);
+                    directions[1] = new Ceil(ceil.Y + 1, ceil.X - 1);
+                    directions[2] = new Ceil(ceil.Y - 1, ceil.X - 1);
+                    directions[3] = new Ceil(ceil.Y + 1, ceil.X + 1);
+                    directions[4] = new Ceil(ceil.Y - 1, ceil.X + 1);
+                    directions[5] = new Ceil(ceil.Y + 0, ceil.X + 2);
+                }
+                else
+                {
+                    //Кроме горизонального движения
+                    directions[0] = new Ceil(ceil.Y + 1, ceil.X - 1);
+                    directions[1] = new Ceil(ceil.Y - 1, ceil.X - 1);
+                    directions[2] = new Ceil(ceil.Y + 2, ceil.X + 0);
+                    directions[3] = new Ceil(ceil.Y - 2, ceil.X + 0);
+                    directions[4] = new Ceil(ceil.Y + 1, ceil.X + 1);
+                    directions[5] = new Ceil(ceil.Y - 1, ceil.X + 1);
+                }
 
                 for (int i = 0; i < directions.Length; ++i)
                 {
                     var dir = directions[i];
                     if (dir.X >= 0 && dir.X < maxSize && dir.Y >= 0 && dir.Y < maxSize)
-                        if(trySetVaue(dir.Y, dir.X, value, antivalue))
+                        if (trySetVaue(dir.Y, dir.X, value, antivalue))
                         {
                             candidats.Push(dir);
                             if (dir.X == maxSize - 1)

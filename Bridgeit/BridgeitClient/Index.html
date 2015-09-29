@@ -312,7 +312,9 @@
                     }
                 }
             };
-            this.leave = function () { };
+            this.leave = function () {
+                me.model.rooms = [];
+            };
             this.enter = function() {
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'getAllRooms' });
             };

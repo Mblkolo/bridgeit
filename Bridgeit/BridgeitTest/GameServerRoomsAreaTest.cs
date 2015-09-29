@@ -33,7 +33,7 @@ namespace BridgeitTest
         [TestMethod]
         public void RemoveRoomSettingsAfterJoin()
         {
-            var __server = new GameServer();
+            var __server = new GameServer(false);
             int ownerPlayerId = 1;
 
             var __ownerConnection = new FakeConnectionProxy { Session = new PlayerSession { Area = "rooms", PlayerId = ownerPlayerId, PlayerName = "owner" } };

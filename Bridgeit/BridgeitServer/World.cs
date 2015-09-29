@@ -34,10 +34,11 @@ namespace BridgeitServer
             return ++lastRoomId;
         }
 
-        public GameServer()
+        public GameServer(bool withSingleThread = true)
         {
             SingleThread = new SingleThreadWorker<Action>(new SimpleSingleThread());
-            SingleThread.Start();
+            if (withSingleThread)
+                SingleThread.Start();
         }
 
         public void ConfigureConnection(IWebSocketConnection connection)
@@ -211,8 +212,11 @@ namespace BridgeitServer
             if (inbox.type == "removeRoom")
             {
                 if (Rep.RoomsSettings.Remove(connection.Session.PlayerId))
+                {
+                    var removeMessage = new RoomSettingsOutboxMessage("rooms", "updateRoomList", connection.Session.PlayerId, null);
                     foreach (var anyConnection in Rep.SessionConnections.Values.Where(x => x.Session.Area == "rooms"))
-                        anyConnection.Send(new RoomSettingsOutboxMessage("rooms", "updateRoomList", connection.Session.PlayerId, null));
+                        anyConnection.Send(removeMessage);
+                }
             }
 
             if (inbox.type == "joinToRoom")
@@ -240,8 +244,15 @@ namespace BridgeitServer
                 connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "bridgeit" });
                 ownerConnection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "bridgeit" });
 
+
+                var roomsForRemove = new Dictionary<int, RoomSettings>() { { connection.Session.PlayerId , null} };
+                RoomSettings opponentSettings;
+                if (Rep.RoomsSettings.TryGetValue(connection.Session.PlayerId, out opponentSettings))
+                    roomsForRemove.Add(connection.Session.PlayerId, null);
+
+                var removeRoomMessage = new RoomSettingsOutboxMessage("rooms", "updateRoomList", connection.Session.PlayerId, null);
                 foreach (var anyConnection in Rep.SessionConnections.Values.Where(x => x.Session.Area == "rooms"))
-                    anyConnection.Send(new RoomSettingsOutboxMessage("rooms", "updateRoomList", connection.Session.PlayerId, null));
+                    anyConnection.Send(removeRoomMessage);
 
                 return;
             }

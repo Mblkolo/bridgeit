@@ -229,6 +229,7 @@ namespace BridgeitServer
                 if (!Rep.RoomsSettings.TryGetValue(ownerConnection.Session.PlayerId, out settings))
                     return;
 
+                Rep.RoomsSettings.Remove(ownerConnection.Session.PlayerId);
                 var room = new BridgeitRoom(GetNextRoomId(), settings, ownerConnection.Session, connection.Session);
                 Rep.Rooms.Add(room.Id, room);
 
@@ -411,8 +412,8 @@ namespace BridgeitServer
 
     internal class GameRepository
     {
-        public readonly Dictionary<Guid, ConnectionProxy> AnonimConnections = new Dictionary<Guid, ConnectionProxy>();
-        public readonly Dictionary<Guid, ConnectionProxy> SessionConnections = new Dictionary<Guid, ConnectionProxy>();
+        public readonly Dictionary<Guid, IConnectionProxy> AnonimConnections = new Dictionary<Guid, IConnectionProxy>();
+        public readonly Dictionary<Guid, IConnectionProxy> SessionConnections = new Dictionary<Guid, IConnectionProxy>();
 
         //Будет специальный сервис, кторый будет убивать потерянные сессии по таймауту
         public readonly Dictionary<Guid, PlayerSession> LostSessions = new Dictionary<Guid, PlayerSession>();

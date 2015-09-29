@@ -55,12 +55,23 @@ namespace BridgeitServer
     }
 
 
+    interface IConnectionProxy
+    {
+        Guid Id { get; }
+
+        PlayerSession Session { get; set; }
+
+        void Send(string message);
+
+        void Send(OutboxMessage message);
+    }
+
     //Концепция такая
     //Подключившийся пользователь сразу от рождения имеет сессию (он же подключен)
     //Но находится в состоянии "анонимное состояние (подключение)"
     //После того как пройдёт запрос на Join, пользователя переводят в системное состояние и
     //создают новое состояние в игре или прикрепляют к уже существующему
-    sealed class ConnectionProxy
+    sealed class ConnectionProxy : IConnectionProxy
     {
         private readonly SingleThreadWorker<Action> _singleThread;
 
@@ -110,9 +121,14 @@ namespace BridgeitServer
 
         public IWebSocketConnection Connection { get; private set; }
         public IConnectionHandler Handler { get; set; }
-        public readonly Guid Id = Guid.NewGuid();
+        public Guid Id {get; private set;}
 
-        public PlayerSession Session;
+        public PlayerSession Session { get; set; }
+
+        public ConnectionProxy()
+        {
+            Id = Guid.NewGuid();
+        }
 
     }
 

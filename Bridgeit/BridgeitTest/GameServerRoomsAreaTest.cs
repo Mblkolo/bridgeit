@@ -13,6 +13,8 @@ namespace BridgeitTest
     {
         class FakeConnectionProxy : IConnectionProxy
         {
+            public readonly List<OutboxMessage> AllMessages = new List<OutboxMessage>();
+
             public FakeConnectionProxy()
             {
                 Id = Guid.NewGuid();
@@ -22,12 +24,9 @@ namespace BridgeitTest
 
             public PlayerSession Session { get; set; }
 
-            public void Send(string message)
-            {
-            }
-
             public void Send(OutboxMessage message)
             {
+                AllMessages.Add(message);
             }
         }
 
@@ -39,8 +38,10 @@ namespace BridgeitTest
 
             var __ownerConnection = new FakeConnectionProxy { Session = new PlayerSession { Area = "rooms", PlayerId = ownerPlayerId, PlayerName = "owner" } };
             var __oppenentConnection = new FakeConnectionProxy { Session = new PlayerSession { Area = "rooms", PlayerId = 2, PlayerName = "oppenent" } };
+            var __watcherConnection = new FakeConnectionProxy { Session = new PlayerSession { Area = "rooms", PlayerId = 3, PlayerName = "watcher" } };
             __server.Rep.SessionConnections.Add(__ownerConnection.Id, __ownerConnection);
             __server.Rep.SessionConnections.Add(__oppenentConnection.Id, __oppenentConnection);
+            __server.Rep.SessionConnections.Add(__watcherConnection.Id, __watcherConnection);
             __server.Rep.RoomsSettings.Add(1, new RoomSettings { Id = 1, Name = "O?", Size = 10 });
 
             var __inboxMessage = new InboxMessage(__oppenentConnection.Id, "joinToRoom", ownerPlayerId.ToString(), "rooms");
@@ -51,6 +52,15 @@ namespace BridgeitTest
             Assert.AreEqual(__server.Rep.SessionConnections[__oppenentConnection.Id].Session.Area, "bridgeit");
             Assert.AreEqual(__server.Rep.Rooms.Count, 1);
             Assert.AreEqual(__server.Rep.Rooms.Values.First().FieldSize, 10);
+
+            Assert.AreEqual(__ownerConnection.AllMessages.Count, 1);
+            Assert.AreEqual(__ownerConnection.AllMessages[0].type, "changeArea");
+
+            Assert.AreEqual(__oppenentConnection.AllMessages.Count, 1);
+            Assert.AreEqual(__oppenentConnection.AllMessages[0].type, "changeArea");
+
+            Assert.AreEqual(__watcherConnection.AllMessages.Count, 1);
+            Assert.AreEqual(__watcherConnection.AllMessages[0].type, "updateRoomList");
         }
     }
 }

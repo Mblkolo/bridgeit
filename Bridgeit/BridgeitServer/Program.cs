@@ -61,8 +61,6 @@ namespace BridgeitServer
 
         PlayerSession Session { get; set; }
 
-        void Send(string message);
-
         void Send(OutboxMessage message);
     }
 

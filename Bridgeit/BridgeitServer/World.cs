@@ -121,8 +121,8 @@ namespace BridgeitServer
                 Rep.SessionConnections.Add(connectionId, connection);
 
                 if (session.Id != sessionId)
-                    connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "setSessionId", value = connection.Session.Id.ToString() }));
-                connection.Send(JsonConvert.SerializeObject(new OutboxMessage { area = "system", type = "changeArea", value = session.Area }));
+                    connection.Send(new OutboxMessage { area = "system", type = "setSessionId", value = connection.Session.Id.ToString() });
+                connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = session.Area });
             }
 
             if (inbox.type == "logout")
@@ -202,7 +202,7 @@ namespace BridgeitServer
 
                 Rep.RoomsSettings[connection.Session.PlayerId] = __newSettings;
                 var outbox = new RoomSettingsOutboxMessage("rooms", "updateRoomList", __newSettings.Id, __newSettings);
-                foreach (var anyConnection in Rep.SessionConnections.Values)
+                foreach (var anyConnection in Rep.SessionConnections.Values.Where(x => x.Session.Area == "rooms"))
                     anyConnection.Send(outbox);
 
                 return;
@@ -211,7 +211,7 @@ namespace BridgeitServer
             if (inbox.type == "removeRoom")
             {
                 if (Rep.RoomsSettings.Remove(connection.Session.PlayerId))
-                    foreach (var anyConnection in Rep.SessionConnections.Values)
+                    foreach (var anyConnection in Rep.SessionConnections.Values.Where(x => x.Session.Area == "rooms"))
                         anyConnection.Send(new RoomSettingsOutboxMessage("rooms", "updateRoomList", connection.Session.PlayerId, null));
             }
 
@@ -230,6 +230,7 @@ namespace BridgeitServer
                     return;
 
                 Rep.RoomsSettings.Remove(ownerConnection.Session.PlayerId);
+
                 var room = new BridgeitRoom(GetNextRoomId(), settings, ownerConnection.Session, connection.Session);
                 Rep.Rooms.Add(room.Id, room);
 
@@ -238,6 +239,10 @@ namespace BridgeitServer
 
                 connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "bridgeit" });
                 ownerConnection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "bridgeit" });
+
+                foreach (var anyConnection in Rep.SessionConnections.Values.Where(x => x.Session.Area == "rooms"))
+                    anyConnection.Send(new RoomSettingsOutboxMessage("rooms", "updateRoomList", connection.Session.PlayerId, null));
+
                 return;
             }
         }

@@ -9,81 +9,83 @@
     <script src="Scripts/angular.js" type="text/javascript"></script>
 </head>
 <body>
-    <div ng-controller="areaController" ng-switch="model.area" ng-cloak>
-        <div ng-switch-default>
-            <h3>Великое ничто!</h3>
-            <div>
-                Всё начинается с великого ничто, клиент обращается к серверу и пытается понять где он.
-                <br />
-                Для этого нужна сессия, если сессии нет, то всё понятно, нужно аутентифицироваться, но если она есть и протухла?
-                <br />
-                Да не важно, в любом случае первым запросом идёт присоединение к серверу и передача идентификатора сессии. И получение его же.
+    <div class="content">
+        <div ng-controller="areaController" ng-switch="model.area" ng-cloak>
+            <div ng-switch-default>
+                <h3>Великое ничто!</h3>
+                <div>
+                    Всё начинается с великого ничто, клиент обращается к серверу и пытается понять где он.
+                    <br />
+                    Для этого нужна сессия, если сессии нет, то всё понятно, нужно аутентифицироваться, но если она есть и протухла?
+                    <br />
+                    Да не важно, в любом случае первым запросом идёт присоединение к серверу и передача идентификатора сессии. И получение его же.
+                </div>
             </div>
-        </div>
 
-        <div ng-switch-when="welcome" ng-controller="welcomeAreaController">
-            <div ng-show="!model.errorMessage">
-                <div>Ты кто такой?</div>
-                <input type="text" ng-model="model.userName" />
-                <input type="submit" value="это я" ng-click="model.onLogin()">
+            <div ng-switch-when="welcome" ng-controller="welcomeAreaController">
+                <h1>Вход</h1>
+                <div ng-show="!model.errorMessage">
+                    <div>Ты кто такой?</div>
+                    <input type="text" ng-model="model.userName" />
+                    <input type="submit" value="это я" ng-click="model.onLogin()">
+                </div>
+                <div ng-show="model.errorMessage">
+                    <span>{{model.errorMessage}}</span>
+                    <button ng-click="model.onCloseErrorMessage()">я исправлюсь...</button>
+                </div>
             </div>
-            <div ng-show="model.errorMessage">
-                <span>{{model.errorMessage}}</span>
-                <button ng-click="model.onCloseErrorMessage()">я исправлюсь...</button>
-            </div>
-        </div>
 
-        <div ng-switch-when="rooms" ng-controller="roomsAreaController">
-            <div class="window" ng-show="viewModel.mode == 'roomList'">
-                <form ng-show="model.isPossibleCreate()" id="new_game">
-                    <button ng-click="showCreateRoom()">Создать</button>
-                </form>
-                <form ng-repeat="room in model.rooms | orderBy:['-myGame','playerId']" class="plate">
-                    <span class="name">{{room.name}}</span>
-                    <span class="field_size">{{room.fieldSize}}x{{room.fieldSize}}</span>
-                    <span class="time">{{room.time}}с</span>
-                    <span class="more_time">{{room.moreTime}}м</span>
-                    <button ng-show="room.myGame" ng-click="removeMyGame()">Удалить</button>
-                    <button ng-hide="room.myGame" ng-click="playGame($index)" >Играть</button>
-                </form>
-            </div>
-            <div class="window game_creation" ng-show="viewModel.mode == 'createRoom'">
-                <form class="plate">
-                    <span class="name">Моя игра</span>
-                    <span>Размер поля</span>
-                    <select ng-model="viewModel.roomSettings.fieldSize">
-                        <option value="3">3х3</option>
-                        <option value="10">10х10</option>
-                    </select>
-                    <span>Время на ход</span>
-                    <select ng-model="viewModel.roomSettings.time">
-                        <option value="15">15с</option>
-                        <option value="20">20с</option>
-                    </select>
-                    <span>Дополнительное время</span>
-                    <select ng-model="viewModel.roomSettings.moreTime">
-                        <option value="3">3м</option>
-                        <option value="5"> 5м</option>
-                    </select>
+            <div ng-switch-when="rooms" ng-controller="roomsAreaController">
+                <div class="window" ng-show="viewModel.mode == 'roomList'">
+                    <form ng-show="model.isPossibleCreate()" id="new_game">
+                        <button ng-click="showCreateRoom()">Создать</button>
+                    </form>
+                    <form ng-repeat="room in model.rooms | orderBy:['-myGame','playerId']" class="plate">
+                        <span class="name">{{room.name}}</span>
+                        <span class="field_size">{{room.fieldSize}}x{{room.fieldSize}}</span>
+                        <span class="time">{{room.time}}с</span>
+                        <span class="more_time">{{room.moreTime}}м</span>
+                        <button ng-show="room.myGame" ng-click="removeMyGame()">Удалить</button>
+                        <button ng-hide="room.myGame" ng-click="playGame($index)">Играть</button>
+                    </form>
+                </div>
+                <div class="window game_creation" ng-show="viewModel.mode == 'createRoom'">
+                    <form class="plate">
+                        <span class="name">Моя игра</span>
+                        <span>Размер поля</span>
+                        <select ng-model="viewModel.roomSettings.fieldSize">
+                            <option value="3">3х3</option>
+                            <option value="10">10х10</option>
+                        </select>
+                        <span>Время на ход</span>
+                        <select ng-model="viewModel.roomSettings.time">
+                            <option value="15">15с</option>
+                            <option value="20">20с</option>
+                        </select>
+                        <span>Дополнительное время</span>
+                        <select ng-model="viewModel.roomSettings.moreTime">
+                            <option value="3">3м</option>
+                            <option value="5"> 5м</option>
+                        </select>
 
-                    <span></span>
-                    <button ng-click="createNewGame()">Cоздать игру</button>
-                    <button ng-click="leaveNewGame()">Не создавать</button>
-                </form>
+                        <span></span>
+                        <button ng-click="createNewGame()">Cоздать игру</button>
+                        <button ng-click="leaveNewGame()">Не создавать</button>
+                    </form>
+                </div>
             </div>
-        </div>
-        <div ng-switch-when="bridgeit" ng-controller="bridgeitAreaController">
-            <div>Игра №{{model.settings.bridgeitId}}</div>
-            <div>{{model.settings.ownerName}} vs {{model.settings.opponentName}}</div>
-            <div>phase {{model.state.phase}} timeout {{model.state.timeout}}</div>
-            <div ng-if="model.state.phase==='completed'">
-                {{model.getWinner()}}
-                <button ng-click="model.leaveGame()">Завершить игру</button>
+            <div ng-switch-when="bridgeit" ng-controller="bridgeitAreaController">
+                <div>Игра №{{model.settings.bridgeitId}}</div>
+                <div>{{model.settings.ownerName}} vs {{model.settings.opponentName}}</div>
+                <div>phase {{model.state.phase}} timeout {{model.state.timeout}}</div>
+                <div ng-if="model.state.phase==='completed'">
+                    {{model.getWinner()}}
+                    <button ng-click="model.leaveGame()">Завершить игру</button>
+                </div>
+                <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="500" height="500" first-on-top="{{model.isOwner()}}" />
             </div>
-            <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="500" height="500" first-on-top="{{model.isOwner()}}" />
         </div>
     </div>
-
 
 
     <script type="text/javascript">

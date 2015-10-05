@@ -1,8 +1,27 @@
-﻿.show {
-    display: block;
+﻿body {
+    background: #f7f7f7;
+    margin: 0px;
+    padding: 0px;
+    /*color: #757D75;*/
 }
 
-.hide {
-    display: none;
+.content {
+    background: #fff;
+    position: relative;
+    margin: 30px auto;
+    width: 600px;
+    height: 600px;
+    background-size: 100%;
+    font-family: Tahoma;
+    font-size: 14px;
+    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
 }
 
+h1 {
+    color: #fff;
+    font-size: 32pt;
+    font-weight: 300;
+    background: #03A9F4;
+    padding: 16px 32px;
+    box-shadow: 0px 2px 4px 1px rgba(50, 50, 50, 0.5);
+}

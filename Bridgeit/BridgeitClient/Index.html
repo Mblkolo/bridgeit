@@ -12,7 +12,7 @@
     <div class="content">
         <div ng-controller="areaController" ng-switch="model.area" ng-cloak>
             <div ng-switch-default>
-                <h3>Великое ничто!</h3>
+                <h1>Bridgeit</h1>
                 <div>
                     Всё начинается с великого ничто, клиент обращается к серверу и пытается понять где он.
                     <br />
@@ -21,20 +21,20 @@
                     Да не важно, в любом случае первым запросом идёт присоединение к серверу и передача идентификатора сессии. И получение его же.
                 </div>
             </div>
-
             <div ng-switch-when="welcome" ng-controller="welcomeAreaController">
-                <h1>Вход</h1>
-                <div ng-show="!model.errorMessage">
-                    <div>Ты кто такой?</div>
-                    <input type="text" ng-model="model.userName" />
-                    <input type="submit" value="это я" ng-click="model.onLogin()">
-                </div>
-                <div ng-show="model.errorMessage">
-                    <span>{{model.errorMessage}}</span>
-                    <button ng-click="model.onCloseErrorMessage()">я исправлюсь...</button>
+                <h1>Bridgeit</h1>
+                <div class="welcome-dialog">
+                    <div ng-show="!model.errorMessage">
+                        <h2>Ваше имя</h2>
+                        <input class="welcome-edit" type="text" ng-model="model.userName" />
+                        <div class="welcome-button"><a href ="#" ng-click="model.onLogin()">Играть</a></div>
+                    </div>
+                    <div ng-show="model.errorMessage">
+                        <span>{{model.errorMessage}}</span>
+                        <button ng-click="model.onCloseErrorMessage()">я исправлюсь...</button>
+                    </div>
                 </div>
             </div>
-
             <div ng-switch-when="rooms" ng-controller="roomsAreaController">
                 <div class="window" ng-show="viewModel.mode == 'roomList'">
                     <form ng-show="model.isPossibleCreate()" id="new_game">
@@ -67,7 +67,6 @@
                             <option value="3">3м</option>
                             <option value="5"> 5м</option>
                         </select>
-
                         <span></span>
                         <button ng-click="createNewGame()">Cоздать игру</button>
                         <button ng-click="leaveNewGame()">Не создавать</button>
@@ -86,7 +85,6 @@
             </div>
         </div>
     </div>
-
 
     <script type="text/javascript">
         var __app = angular.module('bridgeitApp', []);
@@ -109,7 +107,7 @@
                 if (data.type === "setSessionId")
                     Bag.setItem("sessionId", data.value);
 
-                if (data.type === 'setPlayerId') 
+                if (data.type === 'setPlayerId')
                     Bag.setItem('playerId', data.value);
 
                 if (data.type === "logout") {
@@ -126,8 +124,7 @@
                 }
             }
 
-            socketConnection.handler = function(data)
-            {
+            socketConnection.handler = function (data) {
                 if (data.area === 'system')
                     systemRoute(data);
                 else if (data.area === __currentState.area)
@@ -144,7 +141,7 @@
             console.log('welcomeAreaController created');
 
             var __model = welcomeStateService.model;
-            
+
             __model.onLogin = function () {
                 __model.sendLogin();
             };
@@ -160,7 +157,7 @@
 
             $scope.model = roomsStateService.model;
 
-            $scope.viewModel= {};
+            $scope.viewModel = {};
             $scope.viewModel.mode = 'roomList';
             $scope.viewModel.roomSettings = {
                 fieldSize: 10,
@@ -194,15 +191,15 @@
 
             this.handler = null;
 
-            this.send = function(data) {
+            this.send = function (data) {
                 if (that.__ws != null)
                     that.__ws.send(JSON.stringify(data));
             };
 
             this.onMessage = function (evt) {
-                console.log( evt.data );
+                console.log(evt.data);
                 if (that.handler !== null) {
-                    $rootScope.$apply(function() {
+                    $rootScope.$apply(function () {
                         that.handler(JSON.parse(evt.data));
                     });
                 }
@@ -232,7 +229,7 @@
                 userName: null
             };
 
-            this.model.sendLogin = function() {
+            this.model.sendLogin = function () {
                 socketConnection.send({ area: "welcome", type: "login", sessionId: Bag.getItem("sessionId"), value: me.model.userName });
             };
 
@@ -265,11 +262,11 @@
             var me = this;
             this.area = 'rooms';
             this.model = {};
-            this.getPlayerId = function() {
+            this.getPlayerId = function () {
                 return Bag.getItem('playerId');
             };
             this.model.rooms = [];
-            this.model.isPossibleCreate = function() {
+            this.model.isPossibleCreate = function () {
                 var __playerId = Bag.getItem('playerId');
                 for (var __prop in me.model.rooms)
                     if (me.model.rooms.hasOwnProperty(__prop) && me.model.rooms[__prop].playerId == __playerId)
@@ -277,28 +274,27 @@
 
                 return true;
             };
-            this.model.createNewGame = function(roomSettings) {
+            this.model.createNewGame = function (roomSettings) {
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'createRoom', fieldSize: roomSettings.fieldSize });
             };
-            this.model.removeMyGame = function() {
+            this.model.removeMyGame = function () {
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'removeRoom', value: me.model.currentPlayerId });
             };
 
-            this.model.playGame = function(game) {
+            this.model.playGame = function (game) {
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'joinToRoom', value: game.playerId });
             };
 
             this.route = function (data) {
-                if(data.type === 'updateRoomList')
-                {
+                if (data.type === 'updateRoomList') {
                     var __playerId = me.getPlayerId();
                     var __settings = data.settings;
                     for (var __prop in __settings) {
                         if (__settings.hasOwnProperty(__prop)) {
                             var __property = __settings[__prop];
-                            
-                            for(var i = me.model.rooms.length; i--;) {
-                                if(me.model.rooms[i].playerId == __prop) {
+
+                            for (var i = me.model.rooms.length; i--;) {
+                                if (me.model.rooms[i].playerId == __prop) {
                                     me.model.rooms.splice(i, 1);
                                 }
                             }
@@ -317,7 +313,7 @@
             this.leave = function () {
                 me.model.rooms = [];
             };
-            this.enter = function() {
+            this.enter = function () {
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'getAllRooms' });
             };
         }]);
@@ -328,8 +324,7 @@
             var me = this;
             this.area = 'bridgeit';
             this.model = {};
-            this.model.onClick = function (y, x)
-            {
+            this.model.onClick = function (y, x) {
                 var __playerId = Bag.getItem('playerId');
                 if (!me.model.state || me.model.state.activeId != __playerId)
                     return;
@@ -343,7 +338,7 @@
             };
 
             this.model.getWinner = function () {
-                if(!me.model.state)
+                if (!me.model.state)
                     return;
 
                 if (me.model.state.activeId == me.model.settings.ownerId)
@@ -371,7 +366,7 @@
                     type: 'leaveGame'
                 });
             }
-            
+
             this.route = function (data) {
                 if (data.type === 'setRoomSettings') {
                     me.model.settings = data.settings;
@@ -414,7 +409,7 @@
                     height: '@',
                 },
                 // наблюдение и манипулирование DOM
-                link: function($scope, element, attrs) {
+                link: function ($scope, element, attrs) {
                     var canvas = element[0];
                     var context = canvas.getContext('2d');
 
@@ -438,7 +433,7 @@
                         if (Math.abs(xx * (cellSize * 2) + cellSize - x) + Math.abs(yy * (cellSize * 2) + cellSize - y) < cellSize)
                             if (xx >= 0 && yy >= 0 && xx <= field.length / 2 && yy <= field.length / 2)
                                 if (field[2 * yy][2 * xx] == 0) {
-                                    point = {x: 2*xx, y: 2*yy};
+                                    point = { x: 2 * xx, y: 2 * yy };
                                 }
 
                         if (Math.abs(xxx * (cellSize * 2) + (cellSize * 2) - x) + Math.abs(yyy * (cellSize * 2) + (cellSize * 2) - y) < cellSize)
@@ -447,13 +442,12 @@
                                     point = { x: 1 + 2 * xxx, y: 1 + 2 * yyy };
                                 }
 
-                        if (point && $scope.cellClick)
-                        {
+                        if (point && $scope.cellClick) {
                             $scope.$apply(function () {
                                 $scope.cellClick(point)
                             });
                         }
-                        
+
                     });
 
                     $scope.$watch('field', function (value) {
@@ -511,7 +505,7 @@
                                     context.lineTo((x + 1) * cellSize, (y + 2) * cellSize - 0);
                                 }
                                 context.stroke();
-                        }
+                            }
 
                         //Ходы
                         context.lineWidth = 4;

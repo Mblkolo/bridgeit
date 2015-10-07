@@ -75,6 +75,7 @@ namespace BridgeitServer
 
         public ConnectionProxy(IWebSocketConnection connection, SingleThreadWorker<Action> singleThread)
         {
+            Id = Guid.NewGuid();
             _singleThread = singleThread;
             Connection = connection;
             connection.OnMessage = OnMessage;

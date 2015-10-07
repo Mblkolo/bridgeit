@@ -76,6 +76,7 @@
                 </div>
             </div>
             <div ng-switch-when="bridgeit" ng-controller="bridgeitAreaController">
+                <h1>Bridgeit</h1>
                 <div>Игра №{{model.settings.bridgeitId}}</div>
                 <div>{{model.settings.ownerName}} vs {{model.settings.opponentName}}</div>
                 <div>phase {{model.state.phase}} timeout {{model.state.timeout}}</div>
@@ -83,7 +84,9 @@
                     {{model.getWinner()}}
                     <button ng-click="model.leaveGame()">Завершить игру</button>
                 </div>
-                <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="500" height="500" first-on-top="{{model.isOwner()}}" />
+                <div class="bridegeit-field">
+                    <bridgeit-field field="model.state.field" cell-click="model.onClick(y, x)" width="500" height="500" first-on-top="{{model.isOwner()}}" />
+                </div>
             </div>
         </div>
     </div>

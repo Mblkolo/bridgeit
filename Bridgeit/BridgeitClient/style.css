@@ -5,10 +5,10 @@
 }
 
 .content {
-    //background: url(ceil.png); 
+    background: url(ceil.png); 
     margin: 30px auto;
     width: 600px;
-    height: 600px;
+    height: 700px;
     font-family: Tahoma;
     font-size: 14px;
     box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
@@ -28,7 +28,6 @@ h2 {
     font-size: 48px;
     font-weight: 300;
     margin: 16px;
-    margin: 0;
     height: 56px;
 }
 
@@ -59,12 +58,11 @@ h2 {
 }
 
 .welcome-area {
-    height: 600px;
+    height: 700px;
 }
 
 .welcome-area:hover a {
     box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
-    color: #89C4F4;
 }
 
 .welcome-button a:hover {
@@ -78,7 +76,6 @@ h2 {
 
 .rooms-area:hover .rooms-newgame-button a {
     box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
-    color: #89C4F4;
 }
 
 .rooms-content {
@@ -87,8 +84,7 @@ h2 {
 }
 
 .rooms-content .rooms-newgame-button a {
-    margin-right: 0;
-    margin-left: auto;
+    margin: 0 0 16px auto;
     padding: 0px;
     font-size: 24px;
     height: 56px;
@@ -159,6 +155,15 @@ h2 {
 
 .linkbutton:hover
 {
-    color: #fff !important; 
+    color: #fff; 
     background: #89C4F4;
+}
+
+
+.bridegeit-field {
+    width: 500px;
+    height: 500px;
+    margin: 0 auto;
+    border: 10px black solid;
+    border-color: #00f #f00;
 }

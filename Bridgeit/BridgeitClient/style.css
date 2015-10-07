@@ -5,7 +5,7 @@
 }
 
 .content {
-    background: url(ceil.png);
+    //background: url(ceil.png); 
     margin: 30px auto;
     width: 600px;
     height: 600px;
@@ -22,7 +22,7 @@ h1 {
     margin: 0;
 }
 
-h2{
+h2 {
     color: #555;
     text-align: center;
     font-size: 48px;
@@ -32,23 +32,14 @@ h2{
     height: 56px;
 }
 
-
-.welcome-dialog
-{
+.welcome-dialog {
     width: 408px; /* Ширина слоя в пикселах */
     margin: 0 auto; /* Отступ слева и справа */
     margin-top: 96px;
-
     padding: 8px;
 }
 
-.welcome-dialog:hover
-{
-    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
-}
-
-.welcome-edit
-{
+.welcome-edit {
     display: block;
     margin: 16px auto;
     padding: 0px;
@@ -58,29 +49,116 @@ h2{
     text-align: center;
 }
 
-.welcome-button a
-{
-    display: block;
+.welcome-button a {
     margin: 16px auto;
     padding: 0px;
     font-size: 24px;
     height: 56px;
     width: 168px;
-    text-align: center;
     line-height: 56px;
+}
+
+.welcome-area {
+    height: 600px;
+}
+
+.welcome-area:hover a {
+    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
+    color: #89C4F4;
+}
+
+.welcome-button a:hover {
+    color: #fff;
+    background: #89C4F4;
+}
+
+.rooms-area {
+    height: 600px;
+}
+
+.rooms-area:hover .rooms-newgame-button a {
+    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
+    color: #89C4F4;
+}
+
+.rooms-content {
+    margin: 16px auto;
+    width: 312px; /* Ширина слоя в пикселах */
+}
+
+.rooms-content .rooms-newgame-button a {
+    margin-right: 0;
+    margin-left: auto;
+    padding: 0px;
+    font-size: 24px;
+    height: 56px;
+    width: 168px;
+    line-height: 56px;
+}
+
+.rooms-plate {
+    padding: 8px;
+    height: 72px;
+}
+
+.rooms-plate:hover {
+    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
+}
+
+.rooms-plate:hover .linkbutton {
+    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
+}
+
+
+.rooms-plate .name {
+    display: block;
+    color: #333;
+    font-size: 24px;
+    line-height: 40px;
+    font-weight: 300;
+    padding: 0px 8px;
+    margin: 0;
+}
+
+.rooms-plate a {
+    position: relative;
+    float: right;
+    box-shadow: none;
+    width: 96px;
+    line-height: 32px;
+    margin: 0 0 0 auto;
+}
+
+.rooms-plate .field_size {
+    margin-left: 16px;
+    line-height: 32px;
+    color: #999;
+}
+
+.rooms-plate .time {
+    margin-left: 16px;
+    color: #999;
+}
+
+.rooms-plate .more_time {
+    margin-left: 16px;
+    color: #999;
+}
+
+
+
+.linkbutton
+{
+    display: block;
     text-decoration: none;
     color: #89C4F4;
     text-transform: uppercase;
     font-weight: 500;
+    text-align: center;
 }
 
-.welcome-dialog:hover a{
-    box-shadow:  2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);    
-    color: #89C4F4;
-}
-
-.welcome-button a:hover
+.linkbutton:hover
 {
-    color: #fff;
+    color: #fff !important; 
     background: #89C4F4;
 }

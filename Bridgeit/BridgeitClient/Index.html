@@ -21,13 +21,13 @@
                     Да не важно, в любом случае первым запросом идёт присоединение к серверу и передача идентификатора сессии. И получение его же.
                 </div>
             </div>
-            <div ng-switch-when="welcome" ng-controller="welcomeAreaController">
+            <div class="welcome-area" ng-switch-when="welcome" ng-controller="welcomeAreaController">
                 <h1>Bridgeit</h1>
                 <div class="welcome-dialog">
                     <div ng-show="!model.errorMessage">
                         <h2>Ваше имя</h2>
                         <input class="welcome-edit" type="text" ng-model="model.userName" />
-                        <div class="welcome-button"><a href ="#" ng-click="model.onLogin()">Играть</a></div>
+                        <div class="welcome-button"><a class="linkbutton" href="#" ng-click="model.onLogin()">Играть</a></div>
                     </div>
                     <div ng-show="model.errorMessage">
                         <span>{{model.errorMessage}}</span>
@@ -35,19 +35,21 @@
                     </div>
                 </div>
             </div>
-            <div ng-switch-when="rooms" ng-controller="roomsAreaController">
-                <div class="window" ng-show="viewModel.mode == 'roomList'">
-                    <form ng-show="model.isPossibleCreate()" id="new_game">
-                        <button ng-click="showCreateRoom()">Создать</button>
-                    </form>
-                    <form ng-repeat="room in model.rooms | orderBy:['-myGame','playerId']" class="plate">
+            <div class="rooms-area" ng-switch-when="rooms" ng-controller="roomsAreaController">
+                <h1>Bridgeit</h1>
+
+                <div class="rooms-content" ng-show="viewModel.mode == 'roomList'">
+                    <div ng-show="model.isPossibleCreate()" id="new_game" class="rooms-newgame-button">
+                        <a class="linkbutton" ng-click="showCreateRoom()">Создать</a>
+                    </div>
+                    <div ng-repeat="room in model.rooms | orderBy:['-myGame','playerId']" class="rooms-plate">
                         <span class="name">{{room.name}}</span>
                         <span class="field_size">{{room.fieldSize}}x{{room.fieldSize}}</span>
                         <span class="time">{{room.time}}с</span>
                         <span class="more_time">{{room.moreTime}}м</span>
-                        <button ng-show="room.myGame" ng-click="removeMyGame()">Удалить</button>
-                        <button ng-hide="room.myGame" ng-click="playGame($index)">Играть</button>
-                    </form>
+                        <a class="linkbutton" ng-show="room.myGame" ng-click="removeMyGame()">Удалить</a>
+                        <a class="linkbutton" ng-hide="room.myGame" ng-click="playGame($index)">Играть</a>
+                    </div>
                 </div>
                 <div class="window game_creation" ng-show="viewModel.mode == 'createRoom'">
                     <form class="plate">

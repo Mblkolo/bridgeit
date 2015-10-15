@@ -1,11 +1,12 @@
 ﻿body {
-    background: #f7f7f7;
+    background: #EEF1F3;
     margin: 0px;
     padding: 0px;
 }
 
 .content {
-    background: url(ceil.png); 
+    /*background: url(ceil.png); */
+    background-color: #f6f6f6;
     margin: 30px auto;
     width: 600px;
     height: 700px;
@@ -18,8 +19,21 @@ h1 {
     color: #333;
     font-size: 32px;
     font-weight: 300;
-    padding: 16px 32px;
+    padding: 0 32px;
     margin: 0;
+    line-height: 72px;
+}
+
+.left {
+    float: left;
+}
+
+.right {
+    float: right;
+}
+
+.clear {
+    clear: both;
 }
 
 h2 {
@@ -61,9 +75,9 @@ h2 {
     height: 700px;
 }
 
-.welcome-area:hover a {
-    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
-}
+    .welcome-area:hover a {
+        box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
+    }
 
 .welcome-button a:hover {
     color: #fff;
@@ -74,77 +88,76 @@ h2 {
     height: 600px;
 }
 
-.rooms-area:hover .rooms-newgame-button a {
-    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
-}
+    .rooms-area:hover .rooms-newgame-button a {
+        box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
+    }
 
 .rooms-content {
     margin: 16px auto;
     width: 312px; /* Ширина слоя в пикселах */
 }
 
-.rooms-content .rooms-newgame-button a {
-    margin: 0 0 16px auto;
-    padding: 0px;
-    font-size: 24px;
-    height: 56px;
-    width: 168px;
-    line-height: 56px;
-}
+    .rooms-content .rooms-newgame-button a {
+        margin: 0 0 16px auto;
+        padding: 0px;
+        font-size: 24px;
+        height: 56px;
+        width: 168px;
+        line-height: 56px;
+    }
 
 .rooms-plate {
     padding: 8px;
     height: 72px;
 }
 
-.rooms-plate:hover {
-    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
-}
+    .rooms-plate:hover {
+        box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
+    }
 
-.rooms-plate:hover .linkbutton {
-    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
-}
-
-
-.rooms-plate .name {
-    display: block;
-    color: #333;
-    font-size: 24px;
-    line-height: 40px;
-    font-weight: 300;
-    padding: 0px 8px;
-    margin: 0;
-}
-
-.rooms-plate a {
-    position: relative;
-    float: right;
-    box-shadow: none;
-    width: 96px;
-    line-height: 32px;
-    margin: 0 0 0 auto;
-}
-
-.rooms-plate .field_size {
-    margin-left: 16px;
-    line-height: 32px;
-    color: #999;
-}
-
-.rooms-plate .time {
-    margin-left: 16px;
-    color: #999;
-}
-
-.rooms-plate .more_time {
-    margin-left: 16px;
-    color: #999;
-}
+        .rooms-plate:hover .linkbutton {
+            box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
+        }
 
 
+    .rooms-plate .name {
+        display: block;
+        color: #333;
+        font-size: 24px;
+        line-height: 40px;
+        font-weight: 300;
+        padding: 0px 8px;
+        margin: 0;
+    }
 
-.linkbutton
-{
+    .rooms-plate a {
+        position: relative;
+        float: right;
+        box-shadow: none;
+        width: 96px;
+        line-height: 32px;
+        margin: 0 0 0 auto;
+    }
+
+    .rooms-plate .field_size {
+        margin-left: 16px;
+        line-height: 32px;
+        color: #999;
+    }
+
+    .rooms-plate .time {
+        margin-left: 16px;
+        color: #999;
+    }
+
+    .rooms-plate .more_time {
+        margin-left: 16px;
+        color: #999;
+    }
+
+
+
+.linkbutton {
     display: block;
     text-decoration: none;
     color: #89C4F4;
@@ -153,11 +166,11 @@ h2 {
     text-align: center;
 }
 
-.linkbutton:hover
-{
-    color: #fff; 
-    background: #89C4F4;
-}
+    .linkbutton:hover {
+        color: #fff;
+        background: #89C4F4;
+        cursor: pointer;
+    }
 
 
 .bridegeit-field {
@@ -166,4 +179,27 @@ h2 {
     margin: 0 auto;
     border: 10px black solid;
     border-color: #00f #f00;
+}
+
+.logout {
+    padding: 24px 16px 16px;
+    font-size: 16px;
+}
+
+    .logout .linkbutton {
+        box-shadow: none;
+        width: 96px;
+        line-height: 32px;
+    }
+
+    .logout span {
+        box-shadow: none;
+        line-height: 32px;
+        vertical-align: bottom;
+        margin-right: 8px;
+        white-space: nowrap;
+    }
+
+.content:hover .logout .linkbutton {
+    box-shadow: 2px 2px 4px 0px rgba(50, 50, 50, 0.5), 0px 0px 4px 0px rgba(50, 50, 50, 0.5);
 }

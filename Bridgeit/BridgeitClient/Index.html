@@ -36,8 +36,15 @@
                 </div>
             </div>
             <div class="rooms-area" ng-switch-when="rooms" ng-controller="roomsAreaController">
-                <h1>Bridgeit</h1>
-
+                <h1 class="left">Bridgeit</h1>
+                <div class="logout">
+                    <a class="right linkbutton">Выйти</a>
+                    <span class="right">{{model.palyerName}}</span>
+                </div>
+                
+                <div class="clear">
+                    
+                </div>
                 <div class="rooms-content" ng-show="viewModel.mode == 'roomList'">
                     <div ng-show="model.isPossibleCreate()" id="new_game" class="rooms-newgame-button">
                         <a class="linkbutton" ng-click="showCreateRoom()">Создать</a>
@@ -114,6 +121,9 @@
 
                 if (data.type === 'setPlayerId')
                     Bag.setItem('playerId', data.value);
+
+                if (data.type === 'setPlayerName')
+                    Bag.setItem('playerName', data.value);
 
                 if (data.type === "logout") {
                     __currentState.leave();
@@ -319,6 +329,7 @@
                 me.model.rooms = [];
             };
             this.enter = function () {
+                me.model.palyerName = Bag.getItem('playerName');
                 socketConnection.send({ area: me.area, sessionId: Bag.getItem("sessionId"), type: 'getAllRooms' });
             };
         }]);

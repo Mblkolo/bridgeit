@@ -172,6 +172,7 @@ namespace BridgeitServer
                 connection.Session.Area = "rooms";
 
                 connection.Send(new OutboxMessage { area = "system", type = "setPlayerId", value = connection.Session.PlayerId.ToString(CultureInfo.InvariantCulture) });
+                connection.Send(new OutboxMessage { area = "system", type = "setPlayerName", value = connection.Session.PlayerName });
                 connection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "rooms" });
             }
         }
@@ -245,7 +246,7 @@ namespace BridgeitServer
                 ownerConnection.Send(new OutboxMessage { area = "system", type = "changeArea", value = "bridgeit" });
 
 
-                var roomsForRemove = new Dictionary<int, RoomSettings>() { { connection.Session.PlayerId , null} };
+                var roomsForRemove = new Dictionary<int, RoomSettings>() { { connection.Session.PlayerId, null } };
                 RoomSettings opponentSettings;
                 if (Rep.RoomsSettings.TryGetValue(connection.Session.PlayerId, out opponentSettings))
                     roomsForRemove.Add(connection.Session.PlayerId, null);
@@ -316,7 +317,7 @@ namespace BridgeitServer
                     return;
 
                 bool isFinish = false;
-                if(connection.Session.PlayerId == room.OwnerId)
+                if (connection.Session.PlayerId == room.OwnerId)
                 {
                     room.Field[action.y, action.x] = 1;
                     isFinish = BridgeitRoom.CheckHorizontalPath(room);
@@ -359,7 +360,7 @@ namespace BridgeitServer
                 var room = Rep.Rooms.Values.FirstOrDefault(x => x.OwnerId == connection.Session.PlayerId || x.OppnentId == connection.Session.PlayerId);
                 if (room == null || room.Phase != BridgeitRoomPhase.completed)
                     return;
-                
+
                 //Проверяем что все покинили игру
                 var anotherPlayerId = connection.Session.PlayerId == room.OwnerId ? room.OppnentId : room.OwnerId;
                 var anotherSession = Rep.LostSessions.Values.FirstOrDefault(x => x.PlayerId == anotherPlayerId);
@@ -370,7 +371,7 @@ namespace BridgeitServer
                         anotherSession = anotherConnection.Session;
                 }
 
-                if(anotherSession == null || anotherSession.Area != "bridgeit")
+                if (anotherSession == null || anotherSession.Area != "bridgeit")
                 {
                     //TODO прибить таймер
                     Rep.Rooms.Remove(room.Id);
